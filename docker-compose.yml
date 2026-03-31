@@ -21,6 +21,7 @@ services:
       - capifcore:${CAPIF_IP}
     ports:
       - "5000:5000"
+    command: uvicorn src.api:app --host 0.0.0.0 --port 5000 --reload
     #volumes:
     #  - ./src/api.py:/zortenet_netapp/api.py
     #  - ./src/netapp_utils.py:/zortenet_netapp/netapp_utils.py

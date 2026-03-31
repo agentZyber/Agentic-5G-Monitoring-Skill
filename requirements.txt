@@ -5,3 +5,15 @@ redis
 pyopenssl
 termcolor
 evolved5g
+fastapi
+uvicorn[standard]
+pydantic
+langchain-openai
+chromadb
+sentence-transformers
+sse-starlette
+langgraph
+
+pytest
+pytest-asyncio
+httpx
