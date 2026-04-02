@@ -61,7 +61,7 @@ def mock_netapp_utils():
 
 @pytest.fixture
 def mock_evolved5g():
-    with patch("evolved5g.sdk.LocationSubscriber") as mock_loc_sub:
+    with patch("evolved5g.sdk.LocationSubscriber", create=True) as mock_loc_sub:
         mock_instance = MagicMock()
         mock_loc_sub.return_value = mock_instance
         yield mock_loc_sub

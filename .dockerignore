@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+.env
+env_file
+testing_netapp
+pac
+iac
+README.md
+CHANGELOG.md
+

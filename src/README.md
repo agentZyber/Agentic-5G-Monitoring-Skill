@@ -1,2 +1,3 @@
+Application source files for the ZorteNet 5G NetApp live in this directory.
 
-In this directory the developer will add his code and explain what his NetApp consists of.
+See the repository root `README.md` for setup, testing, and release guidance.

@@ -4,7 +4,7 @@ configparser
 redis
 pyopenssl
 termcolor
-evolved5g
+evolved5g==0.2.6
 fastapi
 uvicorn[standard]
 pydantic

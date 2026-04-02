@@ -1,39 +1,52 @@
-import time
+import asyncio
+import json
 import os
 import subprocess
-import json
-import asyncio
 from queue import Queue
-from threading import Thread
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
 from sse_starlette.sse import EventSourceResponse
 import requests
 
 import netapp_utils
-import redis
-
-from evolved5g.sdk import LocationSubscriber, CAPIFInvokerConnector
-from evolved5g.swagger_client.rest import ApiException
-from evolved5g.swagger_client import LoginApi, User, Configuration, ApiClient
-from evolved5g.swagger_client.models import Token
 
 from vector_store import context_vector_store
-from streaming import streaming_manager, stream_event_to_agents, EventType
+from streaming import streaming_manager, stream_event_to_agents
 from agent_workflow import network_agent
+from core_manager import core_manager, initialize_cores
 
 try:
     from langchain_openai import OpenAI, ChatOpenAI
-    from langchain.prompts import PromptTemplate
-    from langchain.tools import tool
-    from langchain.chains import RetrievalQA
 
     LANGCHAIN_AVAILABLE = True
 except ImportError:
+    OpenAI = None
+    ChatOpenAI = None
     LANGCHAIN_AVAILABLE = False
+
+try:
+    from langchain_core.tools import tool as _tool
+except ImportError:
+    try:
+        from langchain.tools import tool as _tool
+    except ImportError:
+        _tool = None
+
+if _tool is None:
+
+    def tool(func=None, *args, **kwargs):
+        if func is not None and callable(func):
+            return func
+
+        def decorator(inner):
+            return inner
+
+        return decorator
+
+else:
+    tool = _tool
 
 app = FastAPI(
     title="ZorteNet 5G NetApp",
@@ -48,26 +61,77 @@ def register_function():
 
 policy_db: Dict[str, Any] = {}
 
-vapp_db: Dict[str, Any] = {"host_name": "", "port": 0, "token": 0}
+vapp_db: Dict[str, Any] = {"host_name": "", "port": 0, "token": ""}
 
 q: Queue = Queue(maxsize=1)
 
+callback_url = os.getenv("CALLBACK_ADDRESS", "localhost:5000")
+netapp_host = os.getenv("NETAPP_HOSTNAME", "zortenetapp")
 
-callback_url = os.environ["CALLBACK_ADDRESS"]
-netapp_host = "zortenetapp"
+capif_host = os.getenv("CAPIF_HOSTNAME", "capifcore")
+capif_port_http = os.getenv("CAPIF_PORT_HTTP", "8080")
+capif_port_https = os.getenv("CAPIF_PORT_HTTPS", "443")
+capif_certs_path = os.getenv("PATH_TO_CERTS", "./capif_onboarding")
 
-capif_host = os.environ["CAPIF_HOSTNAME"]
-capif_port_http = os.environ["CAPIF_PORT_HTTP"]
-capif_port_https = os.environ["CAPIF_PORT_HTTPS"]
-capif_certs_path = os.environ["PATH_TO_CERTS"]
+nef_address = os.getenv("NEF_ADDRESS", "localhost:8080")
+nef_user = os.getenv("NEF_USER", "")
+nef_pass = os.getenv("NEF_PASSWORD", "")
 
-nef_address = os.environ["NEF_ADDRESS"]
-nef_user = os.environ["NEF_USER"]
-nef_pass = os.environ["NEF_PASSWORD"]
 
-nef_url = f"http://{nef_address}"
+def _normalize_base_url(address: str, default: str) -> str:
+    value = address or default
+    if value.startswith(("http://", "https://")):
+        return value
+    return f"http://{value}"
 
-token = netapp_utils.get_token(nef_user, nef_pass, nef_url)
+
+nef_url = _normalize_base_url(nef_address, "http://localhost:8080")
+_nef_token: Optional[str] = None
+_cores_initialized = False
+
+
+def _require_fields(data: Dict[str, Any], fields: List[str]):
+    missing = [field_name for field_name in fields if field_name not in data]
+    if missing:
+        raise HTTPException(
+            status_code=422, detail=f"Missing required fields: {', '.join(missing)}"
+        )
+
+
+def _callback_destination() -> str:
+    if callback_url.startswith(("http://", "https://")):
+        return f"{callback_url.rstrip('/')}/netAppCallback"
+    return f"http://{callback_url}/netAppCallback"
+
+
+def get_nef_token(force_refresh: bool = False) -> str:
+    global _nef_token
+
+    if _nef_token and not force_refresh:
+        return _nef_token
+
+    fallback_token = os.getenv("NEF_BEARER_TOKEN", "")
+    if not nef_user or not nef_pass:
+        _nef_token = fallback_token
+        return _nef_token
+
+    try:
+        _nef_token = netapp_utils.get_token(nef_user, nef_pass, nef_url)
+    except Exception:
+        _nef_token = fallback_token
+
+    return _nef_token
+
+
+def ensure_core_manager_initialized(force_reload: bool = False):
+    global _cores_initialized
+
+    if force_reload or not _cores_initialized:
+        initialize_cores(force_reload=force_reload)
+        _cores_initialized = True
+
+
+ensure_core_manager_initialized()
 
 
 class ContextStore:
@@ -76,6 +140,15 @@ class ContextStore:
         self.max_history = 1000
 
     def add_event(self, event: Dict[str, Any]):
+        external_id = event.get("externalId")
+        location_info = event.get("locationInfo", {})
+        cell_id = location_info.get("cellId") if isinstance(location_info, dict) else None
+
+        if external_id in policy_db and cell_id:
+            allowed_cells = policy_db[external_id].get("cells", [])
+            if cell_id not in allowed_cells:
+                event["type"] = "alert"
+
         event["timestamp"] = datetime.utcnow().isoformat()
         self.history.append(event)
         if len(self.history) > self.max_history:
@@ -204,75 +277,43 @@ def health_check():
 
 @app.post("/vapp_connect")
 def vapp_connect(data: dict):
+    _require_fields(data, ["vapp_ip", "port"])
     vapp_ip = data["vapp_ip"]
     port = data["port"]
+    nef_token = get_nef_token()
 
     vapp_db["host_name"] = vapp_ip
     vapp_db["port"] = port
-    vapp_db["token"] = token
+    vapp_db["token"] = nef_token
 
     return {"token": vapp_db["token"]}
 
 
 @app.post("/subscription_capif")
 def subscription_capif(data: dict):
-    _id = data["id"]
-    num_of_reports = data["num_of_reports"]
-    exp_time = data["exp_time"]
-
-    location_subscriber = LocationSubscriber(
-        nef_url=nef_url,
-        nef_bearer_access_token=token,
-        folder_path_for_certificates_and_capif_api_key=capif_certs_path,
-        capif_host=capif_host,
-        capif_https_port=capif_port_https,
-    )
-
-    subscription = ""
-    resp = "OK"
-
-    subscription = location_subscriber.create_subscription(
+    _require_fields(data, ["id", "num_of_reports", "exp_time"])
+    return _create_subscription_with_core_manager(
+        external_id=data["id"],
+        num_of_reports=data["num_of_reports"],
+        exp_time=data["exp_time"],
         netapp_id="zorte_netapp",
-        external_id=_id,
-        notification_destination=f"http://{callback_url}/netAppCallback",
-        maximum_number_of_reports=num_of_reports,
-        monitor_expire_time=exp_time,
     )
-
-    monitoring_response = subscription.to_dict()
-    print(monitoring_response)
-
-    return {"status": resp, "subscription": monitoring_response}
 
 
 @app.post("/subscription")
 def subscription(data: dict):
-    _id = data["id"]
-    num_of_reports = data["num_of_reports"]
-    exp_time = data["exp_time"]
-
-    token = vapp_db["token"]
-
-    location_subscriber = LocationSubscriber(nef_url, token)
-
-    subscription = ""
-    resp = "OK"
-    try:
-        subscription = location_subscriber.create_subscription(
-            netapp_id=netapp_host,
-            external_id=_id,
-            notification_destination=f"http://{callback_url}/netAppCallback",
-            maximum_number_of_reports=num_of_reports,
-            monitor_expire_time=exp_time,
-        )
-    except evolved5g.swagger_client.rest.ApiException as e:
-        resp = "ApiException"
-
-    return {"status": resp}
+    _require_fields(data, ["id", "num_of_reports", "exp_time"])
+    return _create_subscription_with_core_manager(
+        external_id=data["id"],
+        num_of_reports=data["num_of_reports"],
+        exp_time=data["exp_time"],
+        netapp_id=netapp_host,
+    )
 
 
 @app.post("/setPolicy")
 def set_policy(data: dict):
+    _require_fields(data, ["pol-id", "id", "cells"])
     pid = data["pol-id"]
     exid = data["id"]
     cells = data["cells"]
@@ -282,17 +323,21 @@ def set_policy(data: dict):
 
 @app.get("/get_subscriptions")
 def get_subscriptions():
-    resp = "OK"
-    location_subscriber = LocationSubscriber(nef_url, token)
-    try:
-        all_subscriptions = location_subscriber.get_all_subscriptions(
-            netapp_host, 0, 100
-        )
-        print(all_subscriptions)
-    except ApiException as ex:
-        resp = "ApiException"
+    ensure_core_manager_initialized()
+    return {
+        "status": "OK",
+        "subscriptions": core_manager.get_all_subscriptions(netapp_host),
+    }
 
-    return {"status": resp}
+
+@app.get("/cores/status")
+def get_core_status():
+    ensure_core_manager_initialized()
+    return {
+        "timestamp": datetime.utcnow().isoformat(),
+        "callback_destination": _callback_destination(),
+        **core_manager.get_status(),
+    }
 
 
 @app.get("/VappConsume")
@@ -303,45 +348,151 @@ def vapp_consume():
     return log_record
 
 
-@app.post("/netAppCallback")
-async def net_app_callback(request: Request):
-    data = await request.json()
-
-    event = {"policy": dict(policy_db), "raw_data": data}
-
-    print(data)
-
+def _classify_callback_event(data: Dict[str, Any]) -> str:
     ex_id = data.get("externalId")
     if ex_id in policy_db:
-        if data.get("locationInfo", {}).get("cellId") not in policy_db[ex_id]["cells"]:
-            data["type"] = "alert"
-        else:
-            data["type"] = "log"
-    else:
-        data["type"] = "log"
+        location_info = data.get("locationInfo", {})
+        cell_id = location_info.get("cellId") if isinstance(location_info, dict) else None
+        if cell_id not in policy_db[ex_id]["cells"]:
+            return "alert"
+    return "log"
 
-    context_store.add_event(data)
-    context_vector_store.add_event(data)
 
+def _forward_to_vapp(data: Dict[str, Any]):
     payload = {"data": data}
     headers = {"Content-type": "application/json"}
+
+    if not vapp_db["host_name"] or not vapp_db["port"]:
+        return
 
     try:
         requests.post(
             f"http://{vapp_db['host_name']}:{vapp_db['port']}/vapp_callback",
             headers=headers,
             json=payload,
+            timeout=5,
         )
     except Exception:
         pass
 
+
+def _store_latest_callback(data: Dict[str, Any]):
     if q.empty():
         q.put(data)
     else:
         q.get()
         q.put(data)
 
-    return data
+
+def _serialize_subscription_response(subscription) -> Optional[Dict[str, Any]]:
+    if subscription is None:
+        return None
+
+    if hasattr(subscription, "raw_response") and subscription.raw_response:
+        payload = dict(subscription.raw_response)
+    elif all(
+        hasattr(subscription, field_name)
+        for field_name in ["subscription_id", "external_id", "netapp_id", "status"]
+    ):
+        payload = {
+            "subscription_id": subscription.subscription_id,
+            "external_id": subscription.external_id,
+            "netapp_id": subscription.netapp_id,
+            "status": subscription.status,
+        }
+    elif hasattr(subscription, "to_dict"):
+        payload = subscription.to_dict()
+    elif isinstance(subscription, dict):
+        payload = dict(subscription)
+    else:
+        payload = {"value": subscription}
+
+    core_name = getattr(subscription, "core_name", None)
+    if core_name:
+        payload["core"] = core_name
+    return payload
+
+
+def _create_subscription_with_core_manager(
+    external_id: str, num_of_reports: int, exp_time: str, netapp_id: str
+) -> Dict[str, Any]:
+    ensure_core_manager_initialized()
+    response = core_manager.create_subscription(
+        external_id=external_id,
+        callback_url=_callback_destination(),
+        num_of_reports=num_of_reports,
+        exp_time=exp_time,
+        netapp_id=netapp_id,
+    )
+
+    if response is None:
+        return {"status": "failed", "subscription": None}
+
+    status = "OK" if response.status == "active" else response.status
+    return {
+        "status": status,
+        "subscription": _serialize_subscription_response(response),
+    }
+
+
+def _parse_callback_event(
+    data: Dict[str, Any], source_core: Optional[str] = None
+) -> Dict[str, Any]:
+    ensure_core_manager_initialized()
+
+    try:
+        event = core_manager.process_callback(
+            data=data, source_core=source_core, store_event=False
+        )
+        normalized_event = dict(data)
+        normalized_event.update(event.to_dict())
+    except Exception:
+        normalized_event = dict(data)
+        if source_core:
+            normalized_event["source_core"] = source_core
+
+    return normalized_event
+
+
+async def _process_callback_payload(
+    data: Dict[str, Any], source_core: Optional[str] = None
+) -> Dict[str, Any]:
+    normalized_event = _parse_callback_event(data, source_core=source_core)
+    normalized_event["type"] = _classify_callback_event(normalized_event)
+
+    ex_id = normalized_event.get("externalId")
+    if ex_id in policy_db:
+        normalized_event["policy"] = policy_db[ex_id]
+
+    context_store.add_event(normalized_event)
+    context_vector_store.add_event(dict(normalized_event))
+
+    await stream_event_to_agents(normalized_event)
+
+    if network_agent.is_available() and network_agent._initialized:
+        asyncio.create_task(network_agent.process_event(dict(normalized_event)))
+
+    _forward_to_vapp(normalized_event)
+    _store_latest_callback(normalized_event)
+
+    return normalized_event
+
+
+@app.post("/netAppCallback")
+async def net_app_callback(request: Request):
+    try:
+        data = await request.json()
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail="Invalid JSON payload") from exc
+
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=422, detail="JSON payload must be an object.")
+
+    source_core = request.query_params.get("source_core") or request.headers.get(
+        "X-Source-Core"
+    )
+    print(data)
+    return await _process_callback_payload(data, source_core=source_core)
 
 
 @app.get("/agent/context")
@@ -359,7 +510,7 @@ def get_agent_context(
     response = {
         "context_id": f"context_{datetime.utcnow().timestamp()}",
         "generated_at": datetime.utcnow().isoformat(),
-        "source": "5g_nef_location",
+        "source": "5g_core_location",
         "netapp_id": netapp_host,
         "summary": {
             "total_events": len(context_store.history),
@@ -663,52 +814,6 @@ async def sse_stream(request: Request):
     return EventSourceResponse(event_generator())
 
 
-@app.post("/netAppCallback")
-async def net_app_callback(request: Request):
-    data = await request.json()
-
-    event = {"policy": dict(policy_db), "raw_data": data}
-
-    print(data)
-
-    ex_id = data.get("externalId")
-    if ex_id in policy_db:
-        if data.get("locationInfo", {}).get("cellId") not in policy_db[ex_id]["cells"]:
-            data["type"] = "alert"
-        else:
-            data["type"] = "log"
-    else:
-        data["type"] = "log"
-
-    context_store.add_event(data)
-    context_vector_store.add_event(data)
-
-    asyncio.create_task(stream_event_to_agents(data))
-
-    if network_agent.is_available() and network_agent._initialized:
-        asyncio.create_task(network_agent.process_event(data))
-
-    payload = {"data": data}
-    headers = {"Content-type": "application/json"}
-
-    try:
-        requests.post(
-            f"http://{vapp_db['host_name']}:{vapp_db['port']}/vapp_callback",
-            headers=headers,
-            json=payload,
-        )
-    except Exception:
-        pass
-
-    if q.empty():
-        q.put(data)
-    else:
-        q.get()
-        q.put(data)
-
-    return data
-
-
 @app.get("/stream/status")
 def stream_status():
     return {
@@ -742,7 +847,13 @@ def initialize_agent(model: str = "gpt-4"):
             detail="LangGraph not available. Install langgraph and langchain-openai packages.",
         )
 
-    success = network_agent.initialize(model)
+    try:
+        success = network_agent.initialize(model)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Agent initialization failed: {exc}",
+        ) from exc
     if success:
         return {"status": "initialized", "model": model}
     return {"status": "failed"}

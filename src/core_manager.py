@@ -1,8 +1,10 @@
 import os
 import json
 from typing import Dict, Any, Optional, List, Callable
-from threading import Lock
-from dataclasses import dataclass, field
+from threading import RLock
+from dataclasses import dataclass
+
+import adapters  # noqa: F401
 
 from core_adapter import (
     CoreType,
@@ -11,6 +13,7 @@ from core_adapter import (
     LocationEvent,
     SubscriptionRequest,
     SubscriptionResponse,
+    default_monitor_expire_time,
 )
 from vector_store import context_vector_store
 
@@ -36,7 +39,7 @@ class CoreManager:
 
     def __init__(self):
         self._cores: Dict[str, CoreInstance] = {}
-        self._lock = Lock()
+        self._lock = RLock()
         self._event_handlers: List[Callable] = []
         self._default_core: Optional[str] = None
 
@@ -115,13 +118,13 @@ class CoreManager:
                         external_id=external_id,
                         callback_url=callback_url,
                         num_of_reports=kwargs.get("num_of_reports", 100),
-                        monitor_expire_time=kwargs.get(
-                            "exp_time", "2024-12-31T23:59:59Z"
-                        ),
+                        monitor_expire_time=kwargs.get("exp_time")
+                        or default_monitor_expire_time(),
                         netapp_id=kwargs.get("netapp_id", "zorte_netapp"),
                     )
                     response = core.adapter.create_subscription(request)
                     if response.status == "active":
+                        response.core_name = core.name
                         return response
                 except Exception as e:
                     print(f"Core {core.name} subscription failed: {e}")
@@ -154,22 +157,31 @@ class CoreManager:
         return all_subs
 
     def process_callback(
-        self, data: Dict[str, Any], source_core: Optional[str] = None
+        self,
+        data: Dict[str, Any],
+        source_core: Optional[str] = None,
+        store_event: bool = True,
     ) -> LocationEvent:
         adapter = None
+        resolved_core_name = source_core
 
         if source_core:
             adapter = self.get_core(source_core)
 
         if adapter is None:
             adapter = self.get_default_core()
+            if adapter is not None and self._default_core:
+                resolved_core_name = self._default_core
 
         if adapter is None:
             raise ValueError("No 5G core adapter available")
 
         event = adapter.parse_callback(data)
+        event.source_core = resolved_core_name
+        event.source_core_type = adapter.get_type().value
 
-        context_vector_store.add_event(event.to_dict())
+        if store_event:
+            context_vector_store.add_event(event.to_dict())
 
         for handler in self._event_handlers:
             try:
@@ -199,8 +211,17 @@ class CoreManager:
 
     def get_status(self) -> Dict[str, Any]:
         with self._lock:
+            cores = {
+                name: {
+                    "type": core.adapter.get_type().value,
+                    "enabled": core.enabled,
+                    "priority": core.priority,
+                    "is_default": name == self._default_core,
+                }
+                for name, core in self._cores.items()
+            }
             return {
-                "cores": self.get_all_cores(),
+                "cores": cores,
                 "default_core": self._default_core,
                 "event_handlers_count": len(self._event_handlers),
                 "vector_store_available": context_vector_store.rag_available,
@@ -287,15 +308,22 @@ class ConfigLoader:
 core_manager = CoreManager()
 
 
-def initialize_cores():
+def initialize_cores(force_reload: bool = False):
     """Initialize cores from environment or defaults."""
     configs = ConfigLoader.load_from_env()
 
+    if force_reload:
+        with core_manager._lock:
+            core_manager._cores.clear()
+            core_manager._default_core = None
+
     for name, cfg in configs.items():
+        if not force_reload and name in core_manager._cores:
+            continue
         core_manager.add_core(
             name=name,
             core_type=cfg["type"],
             config=cfg["config"],
-            enabled=True,
-            priority=1,
+            enabled=cfg.get("enabled", True),
+            priority=cfg.get("priority", 1),
         )

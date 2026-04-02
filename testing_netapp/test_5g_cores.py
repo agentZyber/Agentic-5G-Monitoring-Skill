@@ -406,10 +406,12 @@ class TestCoreManagerSubscriptions:
 
         return manager, mock_open5gs, mock_free5gc
 
-    def test_create_subscription_across_cores(self, core_manager):
+    def test_create_subscription_across_cores(self, multi_core_manager):
         from core_adapter import CoreType, SubscriptionResponse
         from adapters.open5gs_adapter import Open5GSAdapter
         from adapters.free5gc_adapter import Free5GCAdapter
+
+        core_manager, _, _ = multi_core_manager
 
         mock_open5gs = MagicMock(spec=Open5GSAdapter)
         mock_open5gs.get_type.return_value = CoreType.OPEN5GS
@@ -444,7 +446,7 @@ class TestCoreManagerSubscriptions:
         )
 
         assert response.status == "active"
-        assert response.subscription_id == "open5gc_sub"
+        assert response.subscription_id == "open5gs_sub"
 
 
 class TestAdapterFactory:
@@ -474,13 +476,10 @@ class TestAdapterFactory:
         assert adapter.get_type() == CoreType.NEF
 
     def test_unsupported_core_type(self):
-        from core_adapter import CoreType
-
-        class UnsupportedType(CoreType):
-            UNKNOWN = "unknown"
+        from core_adapter import FiveGCoreFactory
 
         with pytest.raises(ValueError) as exc_info:
-            FiveGCoreFactory.create(UnsupportedType.UNKNOWN, {})
+            FiveGCoreFactory.create("unknown", {})
 
         assert "Unsupported core type" in str(exc_info.value)
 

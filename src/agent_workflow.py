@@ -1,9 +1,27 @@
 import json
-from typing import TypedDict, Annotated, Sequence, Literal
+from typing import Any, Sequence, TypedDict
 from datetime import datetime
-from langgraph.graph import StateGraph, END
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_core.tools import tool
+
+try:
+    from langchain_core.messages import HumanMessage
+    from langchain_core.tools import tool
+
+    LANGCHAIN_CORE_AVAILABLE = True
+except ImportError:
+    LANGCHAIN_CORE_AVAILABLE = False
+
+    class HumanMessage:
+        def __init__(self, content: str):
+            self.content = content
+
+    def tool(func=None, *args, **kwargs):
+        if func is not None and callable(func):
+            return func
+
+        def decorator(inner):
+            return inner
+
+        return decorator
 
 try:
     from langgraph.prebuilt import create_react_agent
@@ -28,7 +46,7 @@ except ImportError:
 
 
 class NetworkState(TypedDict):
-    messages: Sequence[HumanMessage | AIMessage]
+    messages: Sequence[Any]
     context: dict
     last_event: dict
     alert_triggered: bool
@@ -46,7 +64,11 @@ class NetworkMonitoringAgent:
         self._initialized = False
 
     def is_available(self) -> bool:
-        return LANGGRAPH_AVAILABLE and (OPENAI_AVAILABLE or ANTHROPIC_AVAILABLE)
+        return (
+            LANGGRAPH_AVAILABLE
+            and LANGCHAIN_CORE_AVAILABLE
+            and (OPENAI_AVAILABLE or ANTHROPIC_AVAILABLE)
+        )
 
     def initialize(self, model: str = "gpt-4"):
         if not self.is_available():

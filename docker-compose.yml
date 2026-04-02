@@ -1,8 +1,4 @@
-version: "3.9"
-
-
 services:
-
   app:
     build: .
     environment:
@@ -14,17 +10,9 @@ services:
       - CAPIF_PORT_HTTP=${CAPIF_PORT_HTTP}
       - CAPIF_PORT_HTTPS=${CAPIF_PORT_HTTPS}
       - CALLBACK_ADDRESS=${CALLBACK_ADDRESS}
-
     container_name: zorte_netapp
-
     extra_hosts:
       - capifcore:${CAPIF_IP}
     ports:
       - "5000:5000"
-    command: uvicorn src.api:app --host 0.0.0.0 --port 5000 --reload
-    #volumes:
-    #  - ./src/api.py:/zortenet_netapp/api.py
-    #  - ./src/netapp_utils.py:/zortenet_netapp/netapp_utils.py
-    #  - ./src/prepare.sh:/zortenet_netapp/prepare.sh
-    #  - ./src/capif_registration_template.json:/zortenet_netapp/capif_registration_template.json
-      
+    restart: unless-stopped
