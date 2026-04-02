@@ -20,6 +20,23 @@ class EventBus:
         self._subscribers: Dict[EventType, Set[Callable]] = defaultdict(set)
         self._all_subscribers: Set[Callable] = set()
 
+    def _resolve_event_type(self, event: Dict[str, Any]) -> EventType:
+        raw_type = event.get("type", EventType.SYSTEM.value)
+        if isinstance(raw_type, EventType):
+            return raw_type
+
+        normalized = str(raw_type).lower()
+        type_map = {
+            "log": EventType.LOCATION,
+            EventType.LOCATION.value: EventType.LOCATION,
+            EventType.ALERT.value: EventType.ALERT,
+            EventType.POLICY_CHANGE.value: EventType.POLICY_CHANGE,
+            EventType.SUBSCRIPTION.value: EventType.SUBSCRIPTION,
+            EventType.BREACH.value: EventType.BREACH,
+            EventType.SYSTEM.value: EventType.SYSTEM,
+        }
+        return type_map.get(normalized, EventType.SYSTEM)
+
     def subscribe(
         self, callback: Callable, event_types: Optional[List[EventType]] = None
     ):
@@ -46,7 +63,7 @@ class EventBus:
             except Exception as e:
                 print(f"Event callback error: {e}")
 
-        event_type = EventType(event.get("type", "system"))
+        event_type = self._resolve_event_type(event)
         for callback in self._subscribers.get(event_type, set()):
             try:
                 if asyncio.iscoroutinefunction(callback):
@@ -122,7 +139,9 @@ class StreamingEventFormatter:
             )
             if isinstance(event.get("locationInfo"), dict)
             else None,
-            "source": "5g_nef",
+            "source": event.get("source_core_type")
+            or event.get("source_core")
+            or "5g_nef",
         }
 
     @staticmethod

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import json
 
@@ -10,6 +11,12 @@ class CoreType(str, Enum):
     OPEN5GS = "open5gs"
     FREE5GC = "free5gc"
     UDM_STANDALONE = "udm_standalone"
+
+
+def default_monitor_expire_time(days: int = 365) -> str:
+    return (datetime.now(timezone.utc) + timedelta(days=days)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
 
 
 @dataclass
@@ -22,6 +29,8 @@ class LocationEvent:
     ue_location_timestamp: Optional[str] = None
     age: Optional[int] = None
     raw_data: Optional[Dict[str, Any]] = None
+    source_core: Optional[str] = None
+    source_core_type: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "LocationEvent":
@@ -39,10 +48,12 @@ class LocationEvent:
             ue_location_timestamp=loc_info.get("ueLocationTimestamp"),
             age=loc_info.get("age"),
             raw_data=data,
+            source_core=data.get("source_core"),
+            source_core_type=data.get("source_core_type"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "externalId": self.external_id,
             "type": self.event_type,
             "locationInfo": {
@@ -53,6 +64,11 @@ class LocationEvent:
             "ipv4Addr": self.ipv4_addr,
             "timestamp": self.timestamp,
         }
+        if self.source_core:
+            data["source_core"] = self.source_core
+        if self.source_core_type:
+            data["source_core_type"] = self.source_core_type
+        return data
 
 
 @dataclass
@@ -60,7 +76,7 @@ class SubscriptionRequest:
     external_id: str
     callback_url: str
     num_of_reports: int = 100
-    monitor_expire_time: str = "2024-12-31T23:59:59Z"
+    monitor_expire_time: str = field(default_factory=default_monitor_expire_time)
     netapp_id: str = "zorte_netapp"
 
 
@@ -71,6 +87,7 @@ class SubscriptionResponse:
     netapp_id: str
     status: str
     raw_response: Optional[Dict[str, Any]] = None
+    core_name: Optional[str] = None
 
 
 class FiveGCoreAdapter(ABC):

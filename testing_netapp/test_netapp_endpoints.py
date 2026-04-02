@@ -1,116 +1,99 @@
-from threading import Thread
+import json
+import os
 import signal
 import sys
-from threading import Event
-import requests
+from threading import Event, Thread
 from time import sleep
-import json
-import sys
+
+import pytest
+import requests
 
 
-# netapp_url="https://zortenet.apps.ocp-epg.tid.es"
-
-netapp_url="http://localhost:5001"
+NETAPP_URL = os.getenv("NETAPP_LIVE_URL", "http://localhost:5001")
 
 
-def signal_handler(sig, frame):
-	print('You pressed Ctrl+C!')
-
-	# resp=requests.get("{}/stop_ues".format(netapp_url),verify=False)
-	# print("Started_ues",resp.json())
-
-	event.set()
-	thread.join()
-	sys.exit()
+def _signal_handler(sig, frame):
+    print("You pressed Ctrl+C!")
+    event.set()
+    thread.join()
+    sys.exit()
 
 
+def _location_updates(stop_event: Event):
+    while True:
+        if stop_event.is_set():
+            break
 
-resp=requests.get("{}/start_ues".format(netapp_url),verify=False)
-print("Started_ues",resp.json())
+        resp = requests.get(f"{NETAPP_URL}/VappConsume", timeout=5)
+        data = json.loads(resp.text)
+        if "nothing" in data:
+            continue
 
+        if data["type"] == "log":
+            message = "NORMAL LOG: ue {} with ip {} is using cell {}".format(
+                data["externalId"], data["ipv4Addr"], data["locationInfo"]["cellId"]
+            )
+            print({"type": "LOG", "msg": message})
+        else:
+            message = "ALERT LOG: ue {} with ip {} is using cell {}".format(
+                data["externalId"], data["ipv4Addr"], data["locationInfo"]["cellId"]
+            )
+            print({"type": "ALERT", "msg": message})
 
-
-
-payload={
-    "vapp_ip":"does_not_matter",
-    "port":"777"
-}
-headers = {
-    'Content-type': 'application/json'
-}
-
-auth_response = requests.post("{}/vapp_connect".format(netapp_url), headers=headers,json=payload)
-
-print(auth_response,"vapp_connect")
-
-
-payload={
-    "id":"10003@domain.com",
-    "num_of_reports":"100",
-    "exp_time":'2022-11-12T12:41:39.781Z'
-}
-headers = {
-    'Content-type': 'application/json'
-}
-
-auth_response = requests.post("{}/subscription".format(netapp_url), headers=headers,json=payload)
-
-print(auth_response,"subscription")
+        sleep(1)
 
 
+def main():
+    global event, thread
 
-payload={
-    "id":"10003@domain.com",
-    "pol-id":"0",
-    "cells":"AAAAA1001,AAAAA1002"
-}
-headers = {
-    'Content-type': 'application/json'
-}
+    resp = requests.get(f"{NETAPP_URL}/start_ues", verify=False, timeout=5)
+    print("Started_ues", resp.json())
 
-auth_response = requests.post("{}/setPolicy".format(netapp_url), headers=headers,json=payload)
+    headers = {"Content-type": "application/json"}
 
-print(auth_response,"policy creation")
+    auth_response = requests.post(
+        f"{NETAPP_URL}/vapp_connect",
+        headers=headers,
+        json={"vapp_ip": "does_not_matter", "port": "777"},
+        timeout=5,
+    )
+    print(auth_response, "vapp_connect")
 
+    auth_response = requests.post(
+        f"{NETAPP_URL}/subscription",
+        headers=headers,
+        json={
+            "id": "10003@domain.com",
+            "num_of_reports": "100",
+            "exp_time": "2022-11-12T12:41:39.781Z",
+        },
+        timeout=5,
+    )
+    print(auth_response, "subscription")
 
-event = Event()
+    auth_response = requests.post(
+        f"{NETAPP_URL}/setPolicy",
+        headers=headers,
+        json={
+            "id": "10003@domain.com",
+            "pol-id": "0",
+            "cells": "AAAAA1001,AAAAA1002",
+        },
+        timeout=5,
+    )
+    print(auth_response, "policy creation")
 
-
-def location_updates(event):
-
-	while True:
-        
-		if event.is_set():
-			break
-        # report a message
-		resp = requests.get("{}/VappConsume".format(netapp_url))
-		data=json.loads(resp.text)
-		if("nothing" in data):
-			continue
-		else:
-			d={
-				'type':"",
-				'msg':""
-			}
-
-			if(data['type'] == 'log'):
-				log='NORMAL LOG: ue {} with ip {} is using cell {}'.format(data['externalId'],data['ipv4Addr'],data['locationInfo']['cellId'])
-				d['type']='LOG'
-				d['msg']=log
-			else:
-				alert='ALERT LOG: ue {} with ip {} is using cell {}'.format(data['externalId'],data['ipv4Addr'],data['locationInfo']['cellId'])
-				d['type']='ALERT'
-				d['msg']=alert
-
-			sleep(1)
-			print(d)
-
-
-thread = Thread(target=location_updates, args=(event,))
+    event = Event()
+    thread = Thread(target=_location_updates, args=(event,))
+    thread.start()
+    signal.signal(signal.SIGINT, _signal_handler)
+    thread.join()
 
 
-thread.start()
+@pytest.mark.skip(reason="Manual live integration harness. Run this file directly.")
+def test_live_netapp_endpoints_manual():
+    pass
 
 
-
-signal.signal(signal.SIGINT, signal_handler)
+if __name__ == "__main__":
+    main()

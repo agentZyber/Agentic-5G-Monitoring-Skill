@@ -12,11 +12,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 def client(mock_env, mock_netapp_utils, mock_evolved5g):
     with patch("redis.Redis"):
         with patch("subprocess.run"):
-            from api import app, policy_db, context_store, context_vector_store
+            from api import app, policy_db, context_store, context_vector_store, q
 
             policy_db.clear()
             context_store.history.clear()
             context_vector_store.in_memory_store.clear()
+            while not q.empty():
+                q.get()
 
             yield TestClient(app)
 
@@ -206,6 +208,60 @@ class TestStreamEndpoints:
         assert "total_connections" in data
 
 
+class TestCoreEndpoints:
+    def test_core_status(self, client):
+        response = client.get("/cores/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "cores" in data
+        assert "default_core" in data
+        assert "callback_destination" in data
+
+    def test_get_subscriptions_uses_core_manager(self, client):
+        with patch("api.core_manager.get_all_subscriptions") as mock_get_subscriptions:
+            mock_get_subscriptions.return_value = [
+                {
+                    "core": "default",
+                    "subscription_id": "sub_1",
+                    "external_id": "ue123",
+                    "status": "active",
+                    "raw": {"subscriptionId": "sub_1"},
+                }
+            ]
+
+            response = client.get("/get_subscriptions")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "OK"
+            assert data["subscriptions"][0]["core"] == "default"
+
+    def test_subscription_uses_core_manager(self, client):
+        from core_adapter import SubscriptionResponse
+
+        with patch("api.core_manager.create_subscription") as mock_create_subscription:
+            mock_create_subscription.return_value = SubscriptionResponse(
+                subscription_id="sub_123",
+                external_id="ue123@domain.com",
+                netapp_id="zortenetapp",
+                status="active",
+                raw_response={"subscriptionId": "sub_123"},
+                core_name="default",
+            )
+
+            response = client.post(
+                "/subscription",
+                json={
+                    "id": "ue123@domain.com",
+                    "num_of_reports": 10,
+                    "exp_time": "2027-01-01T00:00:00Z",
+                },
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "OK"
+            assert data["subscription"]["core"] == "default"
+
+
 class TestAgentGraphEndpoints:
     def test_agent_graph_status(self, client):
         response = client.get("/agent/graph/status")
@@ -229,6 +285,15 @@ class TestNetAppCallbackEndpoint:
 
         data = response.json()
         assert data["type"] == "log"
+
+    def test_callback_includes_source_core(self, client, sample_location_event):
+        response = client.post(
+            "/netAppCallback?source_core=default", json=sample_location_event
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["source_core"] == "default"
 
     def test_callback_creates_alert_event(
         self, client, sample_alert_event, sample_policy
