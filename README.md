@@ -1,4 +1,4 @@
-# ZorteNet 5G NetApp
+# ZorteNet 5G Agentic Skill (former NetApp)
 
 <p align="center">
   <img src="assets/zortenet-icon.png" alt="ZorteNet icon" width="144">
