@@ -113,7 +113,15 @@ See `CHANGELOG.md` for the current release summary.
 
 ## Final Public Release Checklist
 
-- Choose and add an explicit open-source license before making the repository public
+- Licensed under Apache-2.0 (see `LICENSE` and `NOTICE`)
 - Replace placeholder environment values in your local `.env`
 - Confirm any deployment-specific CAPIF / NEF details for your target environment
 - Tag a release after CI passes on GitHub
+
+## License
+
+ZorteNet is licensed under the [Apache License 2.0](LICENSE). See the
+[`NOTICE`](NOTICE) file for third-party attributions. All dependencies are
+under permissive licenses (Apache-2.0 / MIT / BSD-3-Clause), so the project
+may be used, modified, and distributed in both open-source and commercial
+products.

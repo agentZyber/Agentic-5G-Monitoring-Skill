@@ -1,19 +1,21 @@
-flask
-requests
-configparser
-redis
-pyopenssl
-termcolor
-evolved5g==0.2.6
+# Runtime dependencies (imported by src/). All Apache-2.0 / MIT / BSD-3-Clause.
 fastapi
 uvicorn[standard]
 pydantic
+requests
+sse-starlette
+evolved5g==0.2.6          # NEF/CAPIF SDK (EVOLVED-5G) — Apache-2.0
+
+# Agentic / RAG layer
 langchain-openai
+langgraph
 chromadb
 sentence-transformers
-sse-starlette
-langgraph
 
+# Optional: reserved for the usage-metering layer (not yet imported)
+# redis
+
+# Test dependencies
 pytest
 pytest-asyncio
 httpx

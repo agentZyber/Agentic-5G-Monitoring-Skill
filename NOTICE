@@ -1,0 +1,30 @@
+ZorteNet 5G Agentic Skill
+Copyright 2026 Akis Kourtis (ZorteNet)
+
+This product is licensed under the Apache License, Version 2.0 (see the
+LICENSE file).
+
+This software includes third-party open-source components, each distributed
+under its own license. All directly used dependencies are permissive
+(Apache-2.0, MIT, BSD-3-Clause). Notable components and their licenses:
+
+  - evolved5g            Apache License 2.0   (EVOLVED-5G H2020 project SDK)
+  - FastAPI              MIT License
+  - Starlette / Uvicorn  BSD-3-Clause License
+  - sse-starlette        BSD-3-Clause License
+  - Pydantic             MIT License
+  - requests             Apache License 2.0
+  - LangChain / LangGraph / langchain-openai   MIT License
+  - ChromaDB             Apache License 2.0
+  - sentence-transformers Apache License 2.0
+
+Transitive dependencies of the above are also distributed under permissive
+or weak-copyleft licenses. A small number of transitive packages are
+distributed under the Mozilla Public License 2.0 (e.g. certifi, orjson,
+tqdm); MPL-2.0 is a file-level copyleft that does not affect the licensing
+of this project's own source code. Where a transitive package is offered
+under a choice of licenses (e.g. text-unidecode, dual-licensed Artistic /
+GPL), this distribution elects the permissive option.
+
+The full license texts of bundled dependencies are available in their
+respective distribution packages.
