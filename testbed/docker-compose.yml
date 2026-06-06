@@ -1,0 +1,81 @@
+# ZorteNet local testbed — AGENTIC OVERLAY (Tier 1)
+#
+# This compose brings up the local-first agentic layer: Ollama (local LLM), the ZorteNet
+# toolkit, and Prometheus/Grafana observability. It is designed to sit *next to* a 5G core +
+# RAN (Open5GS + UERANSIM) — see testbed/README.md for how to bring those up (the verified
+# canonical no-SDR quickstart) and attach them to this network.
+#
+# VALIDATION STATUS: syntax-validated with `docker compose config`. NOT yet brought up live in
+# the authoring environment (no Docker daemon there). Run `make testbed-up` to start it.
+name: zortenet-testbed
+
+networks:
+  zortenet-net:
+    driver: bridge
+
+volumes:
+  ollama-data:
+  grafana-data:
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: zortenet-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks: [zortenet-net]
+    restart: unless-stopped
+    # GPU is optional; small models (llama3.1:8b / qwen2.5:7b) run on CPU. Pull with `make testbed-models`.
+
+  zortenet:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: zortenet-toolkit:dev
+    container_name: zortenet-toolkit
+    # Skip CAPIF onboarding for the local testbed; run the API directly.
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "5000"]
+    depends_on: [ollama]
+    environment:
+      ZORTENET_LLM: ollama
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      CORE_TYPE: ${CORE_TYPE:-open5gs}
+      # Point at your Open5GS NEF/SBI. Default assumes Open5GS runs via its own compose on the host.
+      OPEN5GS_BASE_URL: ${OPEN5GS_BASE_URL:-http://host.docker.internal:29508}
+      CALLBACK_ADDRESS: zortenet:5000
+    ports:
+      - "5000:5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks: [zortenet-net]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: zortenet-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks: [zortenet-net]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: zortenet-grafana
+    profiles: ["dashboards"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus]
+    networks: [zortenet-net]
+    restart: unless-stopped
