@@ -49,6 +49,9 @@ the table is honest about what runs today vs. what's on the roadmap.
 
 ## Quick start
 
+> 🖥️ **Requirements:** minimum is a laptop with Python 3.11 + Ollama + 8 GB RAM (no cloud, no GPU,
+> no radio). Full tiered breakdown in [`docs/INFRASTRUCTURE.md`](docs/INFRASTRUCTURE.md).
+
 ```bash
 # 1) Toolkit unit tests (no heavy deps, no daemon)
 make setup            # or: python3.11 -m venv .venv && .venv/bin/pip install requests pytest
