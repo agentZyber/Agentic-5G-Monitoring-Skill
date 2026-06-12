@@ -8,7 +8,9 @@ OLLAMA_MODEL ?= llama3.1:8b
 PROFILE ?=
 PROFILE_FLAG := $(if $(PROFILE),--profile $(PROFILE))
 
-.PHONY: setup test test-all test-toolkit run docker-build docker-up clean \
+.PHONY: setup setup-toolkit test test-all test-toolkit run run-toolkit mcp-stdio \
+        telco-bench teleagent-bench new-pack train \
+        docker-build docker-up clean \
         testbed-config testbed-up testbed-down testbed-logs testbed-models
 
 setup:
@@ -26,6 +28,37 @@ test-all:
 # New agentic-toolkit unit tests (core / llm / datasets / interop) — no heavy deps required.
 test-toolkit:
 	$(PYTEST) tests -q
+
+# Toolkit venv with the light dependency set (uses the newest python3.1x available).
+TOOLKIT_PY := $(shell command -v python3.11 || command -v python3.12 || command -v python3)
+setup-toolkit:
+	$(TOOLKIT_PY) -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements-toolkit.txt
+
+# Run the new toolkit app (REST /agent/ask + A2A + MCP-over-HTTP at /mcp) on :5001.
+run-toolkit:
+	PYTHONPATH=src $(PYTHON_BIN) -m uvicorn zortenet.app:app --host 0.0.0.0 --port 5001
+
+# Serve the MCP face over stdio (for local MCP clients, e.g. Claude Code/Desktop).
+mcp-stdio:
+	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.interop.mcp_server
+
+# Score the configured model on TeleQnA (fetches the dataset on first run).
+telco-bench:
+	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.packs.telco_bench --data datasets/TeleQnA.txt $(ARGS)
+
+# Scenario-based agentic benchmark (programmatic, state-based judges).
+teleagent-bench:
+	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.bench $(ARGS)
+
+# Scaffold a new capability pack (NAME=my-pack DESC="what it does").
+new-pack:
+	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.packs.new $(NAME) --description "$(DESC)"
+
+# The gated training pipeline (ARGS="status" | "g0 ..." | "curate" | "synth" | "mixture" | "config" | "card").
+train:
+	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.train $(ARGS)
 
 # --- Local testbed (testbed/) ------------------------------------------------
 testbed-config:

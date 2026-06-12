@@ -1,0 +1,16 @@
+# Light dependency set for the agentic toolkit (src/zortenet/) — no PyTorch/Chroma tax.
+# The legacy NetApp's full set lives in requirements.txt.
+
+# runtime
+requests
+fastapi
+uvicorn[standard]
+mcp                    # Model Context Protocol SDK (stdio + Streamable HTTP server faces)
+rdflib                 # Turtle parse-validation of generated TIO intents (pure Python)
+# optional extras (not installed by default):
+#   websockets         # Amarisoft remote-API transport (live Tier-3 only)
+
+# tests
+pytest
+pytest-asyncio
+httpx

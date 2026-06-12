@@ -11,6 +11,7 @@ langchain-openai
 langgraph
 chromadb
 sentence-transformers
+mcp                       # MCP server faces for the toolkit app (zortenet.app) in the same image
 
 # Optional: reserved for the usage-metering layer (not yet imported)
 # redis

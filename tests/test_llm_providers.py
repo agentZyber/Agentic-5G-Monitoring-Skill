@@ -23,6 +23,78 @@ def test_unknown_provider_raises():
         get_provider("does-not-exist")
 
 
+def test_vllm_provider_selection_build_and_parse(monkeypatch):
+    import zortenet.llm.vllm as vllm_mod
+    from zortenet.llm.vllm import VLLMProvider
+
+    monkeypatch.setenv("ZORTENET_LLM", "vllm")
+    provider = get_provider(model="Qwen/Qwen2.5-32B-Instruct", base_url="http://gpu:8000")
+    assert isinstance(provider, VLLMProvider) and provider.name == "vllm"
+
+    # request shape: OpenAI-compatible with tools rendered in the OpenAI envelope
+    spec = ToolSpec(name="t", description="d")
+    body = provider.build_request([{"role": "user", "content": "hi"}], tools=[spec])
+    assert body["model"] == "Qwen/Qwen2.5-32B-Instruct"
+    assert body["tools"][0]["type"] == "function"
+
+    # degradation: unreachable server -> False, never raises
+    def boom(*a, **k):
+        raise ConnectionError("down")
+
+    monkeypatch.setattr(vllm_mod.requests, "get", boom)
+    assert provider.is_available() is False
+
+    # chat parse: OpenAI response shape with string-encoded tool arguments
+    class FakeResp:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "model": "Qwen/Qwen2.5-32B-Instruct",
+                "choices": [
+                    {
+                        "message": {
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "c1",
+                                    "type": "function",
+                                    "function": {"name": "t", "arguments": '{"a": 1}'},
+                                }
+                            ],
+                        }
+                    }
+                ],
+            }
+
+    monkeypatch.setattr(vllm_mod.requests, "post", lambda *a, **k: FakeResp())
+    resp = provider.chat([{"role": "user", "content": "go"}])
+    assert resp.has_tool_calls
+    from zortenet.agent.runtime import parse_tool_call
+
+    name, args = parse_tool_call(resp.tool_calls[0])  # runtime handles string arguments
+    assert (name, args) == ("t", {"a": 1})
+
+
+def test_vllm_model_autodiscovery(monkeypatch):
+    import zortenet.llm.vllm as vllm_mod
+    from zortenet.llm.vllm import VLLMProvider
+
+    class ModelsResp:
+        status_code = 200
+
+        def json(self):
+            return {"data": [{"id": "served-70b"}]}
+
+    monkeypatch.setattr(vllm_mod.requests, "get", lambda *a, **k: ModelsResp())
+    provider = VLLMProvider(model="")  # unset: discover from the server
+    body = provider.build_request([{"role": "user", "content": "x"}])
+    assert body["model"] == "served-70b"
+
+
 def test_get_provider_openai_and_anthropic_construct_and_degrade(monkeypatch):
     # Regression for the review's HIGH finding: these must not raise ModuleNotFoundError, and
     # must degrade gracefully (is_available False) when the optional SDK/key is absent.

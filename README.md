@@ -37,15 +37,23 @@ local — is the underexplored, high-leverage opening this toolkit targets.
 **Milestone 0 (foundation) is in place and unit-tested.** This is an actively-evolving scaffold;
 the table is honest about what runs today vs. what's on the roadmap.
 
-| Area | Today (M0) | Roadmap |
+| Area | Today (Stages 1–5 code-complete) | Roadmap |
 |---|---|---|
-| Generalized core (`NetworkEvent`) | ✅ + tests | — |
-| Local-first LLM layer (Ollama default; OpenAI/Anthropic optional) | ✅ + tests | vLLM |
-| Interop schemas (MCP / A2A / OpenAI / Anthropic / Ollama) | ✅ + tests | live MCP/A2A servers wired into the app |
-| Capability packs | ✅ `location-monitor` | netops-copilot, intent-to-network, self-heal, … |
-| Dataset registry | ✅ 6 datasets | `pull` + RAG ingest + `telco-bench` |
-| Local testbed (Ollama + toolkit + Prometheus) | ✅ compose syntax-validated | live-validated bring-up; srsRAN/O-RAN tier |
-| Legacy NetApp (location/geofence/RAG) | ✅ unchanged (103 tests) | folded into `location-monitor` |
+| Generalized core (`NetworkEvent`) + **event bus/store** | ✅ + tests — multi-domain ring-buffer store, `/events` ingest + query, legacy shim | durable persistence |
+| LLM layer (local-first) | ✅ Ollama default + **vLLM (GPU serving, tool calling)** + OpenAI/Anthropic | token streaming |
+| Agent runtime + trajectory capture | ✅ tool-calling loop + training-shape JSONL logging | — |
+| Interop faces | ✅ **MCP (stdio + Streamable HTTP, wire-tested)** · **A2A (card + full task lifecycle at `/a2a`)** · **ACP shim** · **AG-UI SSE** · **OASF record** · **ANP (experimental)** · REST | official-SDK conformance runs; AAIF convergence tracking |
+| **Multi-agent NOC** | ✅ ran/core/security **specialist agents** behind A2A task managers; orchestrator delegates via A2A `message/send` envelopes (≥3-agent cooperative scenario tested) | cross-host multi-instance run |
+| **Intent layer (standards bridge)** | ✅ TMF921/TIO + TS 28.312 renderings, validation, **enforced human-approval ledger** (approval is *not* an agent tool) | SHACL strictness; live KPI-observed apply |
+| Capability packs | ✅ 8 (incl. **`multi-agent-noc`**) + **pack generator** (`make new-pack`, contract-tested output) | community packs |
+| **TeleAgentBench** | ✅ v0: 5 scenarios, **programmatic state-based judges** (incl. the safety gate scenario); judges proven to discriminate competent/lazy/unsafe agents | live model scores; held-out set (S5) |
+| Knowledge base (RAG) | ✅ dependency-light **BM25 + citations** (`spec-kb`) | embedding backend |
+| Connectors | ✅ Prometheus, Open5GS, UERANSIM control, NWDAF stub, **Amarisoft**, **A1/RIC** — `/connectors` catalog with honest statuses | live validation (callbox/RIC) |
+| Datasets & bench | ✅ registry + `pull` CLI + replay → bus + `telco-bench` runner | baseline scores (needs Ollama) |
+| **Training pipeline (gated G0→G3)** | ✅ baseline harness ("no gap → don't train" encoded), curation + **contamination guard**, machine-validated synth, mixture honesty, **enforced gate ledger**, GPU presets, hedged model card — `make train ARGS=status` | **the GPU runs** (G0 numbers, LoRA-SFT, publication) |
+| Deployment | ✅ compose (syntax-validated) + **Helm chart (lint + template pass, CI-checked)**; Tier-2/3 documented | **live bring-up = the open gate item** |
+| Legacy NetApp | ✅ unchanged (103 tests) | one-line bus wiring at live bring-up |
+| CI | ✅ legacy + toolkit matrix (3.11/3.12) + compose check + **helm lint** | — |
 
 ## Quick start
 
@@ -53,16 +61,23 @@ the table is honest about what runs today vs. what's on the roadmap.
 > no radio). Full tiered breakdown in [`docs/INFRASTRUCTURE.md`](docs/INFRASTRUCTURE.md).
 
 ```bash
-# 1) Toolkit unit tests (no heavy deps, no daemon)
-make setup            # or: python3.11 -m venv .venv && .venv/bin/pip install requests pytest
-make test-toolkit     # 28 passing
+# 1) Toolkit setup + unit tests (light deps — no PyTorch, no daemon)
+make setup-toolkit    # venv + requirements-toolkit.txt
+make test-toolkit     # full toolkit suite
 
-# 2) Local testbed (needs Docker; see testbed/README.md for the Open5GS+UERANSIM core)
+# 2) Run the agent-native toolkit app (REST + A2A + MCP-over-HTTP at /mcp)
+make run-toolkit      # :5001 → /docs, /agent/ask, /.well-known/agent-card.json, /mcp
+make mcp-stdio        # or serve the MCP face over stdio (Claude Code/Desktop etc.)
+
+# 3) Benchmark a local model on telecom knowledge (needs Ollama running)
+make telco-bench ARGS="--limit 200"
+
+# 4) Local testbed (needs Docker; see testbed/README.md for the Open5GS+UERANSIM core)
 make testbed-config   # validate compose
 make testbed-up       # ollama + toolkit + prometheus
 make testbed-models   # pull the default Ollama model (waits for readiness)
 
-# 3) Legacy NetApp API
+# 5) Legacy NetApp API
 make run              # uvicorn on :5000  → http://localhost:5000/docs
 ```
 
@@ -91,7 +106,7 @@ matrix (§5), the capability-pack catalog (§4), datasets (§7), and the impleme
 - `src/zortenet/` — the toolkit: `core/`, `llm/`, `agent/`, `interop/`, `packs/`, `datasets/`
 - `src/` (top level) — the legacy ZorteNet NetApp (FastAPI app, 5G-core adapters)
 - `testbed/` — local Open5GS+UERANSIM+Ollama testbed (compose, configs, README)
-- `docs/` — the design blueprint
+- `docs/` — [design blueprint](docs/AGENTIC_TOOLKIT_BLUEPRINT.md) · [implementation plan](docs/IMPLEMENTATION_PLAN.md) (Stages 0–5) · [infrastructure tiers](docs/INFRASTRUCTURE.md) · [model pipeline](docs/MODEL_PIPELINE.md)
 - `testing_netapp/` — legacy NetApp tests · `tests/` — new toolkit tests
 
 ---

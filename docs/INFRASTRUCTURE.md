@@ -67,6 +67,13 @@ The complete experience: a simulated 5G network the agent observes and acts on. 
 > `sentence-transformers`/`chromadb`/PyTorch entirely — the toolkit modules need just `requests`
 > (+ `mcp`/`fastapi` for the servers). That cuts the Python image by ~3 GB.
 
+## Tier T — Model training (optional, GPU)
+
+Fine-tuning your own telecom agent model (see [`MODEL_PIPELINE.md`](MODEL_PIPELINE.md)) is the one
+activity that genuinely needs GPUs: a single **24 GB** card handles LoRA on a 7–8B model;
+**4 × 24 GB** reaches QLoRA-70B and lets a teacher model serve while a student trains. Not needed
+for any of Tiers 0–3 — inference runs on CPU.
+
 ## Tier 3 — Real RF / O-RAN (advanced, NOT part of the minimum)
 
 For real radio or O-RAN closed-loop xApps. Opt-in only.

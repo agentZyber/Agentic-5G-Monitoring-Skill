@@ -230,6 +230,9 @@ feature and the strongest differentiator vs. ZorteNet's current REST-only functi
   so a small local model punches above its weight on telecom Q&A.
 - **Built-in eval:** `telco-bench` scores the configured model on **TeleQnA** so users can compare
   local vs. cloud on telecom knowledge — a shareable, viral artifact.
+- **Producing your own model:** the framework's fine-tuning path (testbed-generated agentic
+  trajectories → LoRA tune → eval gates) is specified in **[MODEL_PIPELINE.md](MODEL_PIPELINE.md)**
+  — train only where measurement shows a gap RAG doesn't close.
 
 ---
 
@@ -297,6 +300,10 @@ so the same testbed runs on a K8s cluster for CI and multi-node experiments.
 
 ## 9. Implementation roadmap
 
+> **Canonical sequencing now lives in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** (Stages
+> 0–5, with exit gates; LoRA-SFT deliberately last). The outline below is kept as the original
+> milestone framing — see the mapping table at the end of the plan.
+
 **Milestone 0 — Foundation (the runnable scaffold, next):**
 - New package layout (§10); generalize `LocationEvent → NetworkEvent`; `Connector` registry; keep tests green.
 - `zortenet.llm` with **Ollama** default; wire into the agent runtime.
@@ -304,11 +311,11 @@ so the same testbed runs on a K8s cluster for CI and multi-node experiments.
 - **MCP server** exposing the existing tools (fastest credible "agent-native" win).
 - `location-monitor` pack = today's behavior, repackaged. Dataset registry + `telco-bench` (TeleQnA).
 
-**Milestone 1 — Agent-native:** A2A Agent Card + server; AG-UI event stream; `netops-copilot` pack with RAG over Tele-Data + Prometheus; README demo GIF.
+**Milestone 1 — Agent-native:** A2A Agent Card + server; AG-UI event stream; `netops-copilot` pack with RAG over Tele-Data + Prometheus; README demo GIF; **trajectory-capture hooks** (start logging agent runs in the training-data shape from day one — see [MODEL_PIPELINE.md](MODEL_PIPELINE.md)); `telco-bench` baselines.
 
-**Milestone 2 — Standards bridge:** O-RAN A1/E2 connector (OSC RIC); `intent-to-network` (TS 28.312 / TMF921); `ran-opt-copilot`; Tier-2 testbed.
+**Milestone 2 — Standards bridge:** O-RAN A1/E2 connector (OSC RIC); `intent-to-network` (TS 28.312 / TMF921); `ran-opt-copilot`; Tier-2 testbed; **TeleAgentBench v0** (scenario-based agentic eval, [MODEL_PIPELINE.md](MODEL_PIPELINE.md) §4).
 
-**Milestone 3 — Breadth & polish:** `self-heal`, `security-sentinel`, `energy-agent`, `multi-agent-noc` (A2A); ACP/ANP/AGNTCY adapters; Helm/K8s (Tier-3); docs site; example notebooks.
+**Milestone 3 — Breadth & polish:** `self-heal`, `security-sentinel`, `energy-agent`, `multi-agent-noc` (A2A); ACP/ANP/AGNTCY adapters; Helm/K8s (Tier-3); docs site; example notebooks; **model pipeline v1** (dataset → LoRA tune → eval gates → publish; [MODEL_PIPELINE.md](MODEL_PIPELINE.md)).
 
 **Milestone 4 — Community:** contribution guide for new packs/connectors, a pack cookiecutter, a public leaderboard for `telco-bench`, conference/demo collateral.
 

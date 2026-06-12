@@ -94,6 +94,35 @@ E2/KPM closed loop. This is the verified open-source O-RAN setup (OSC RIC + srsR
 Note: srsUE 5G-SA is a research prototype with known attach/PDU bugs — keep UERANSIM as the
 default and use srsRAN only when you need real radio or O-RAN xApps.
 
+The toolkit's RIC face is the **A1 policy client** (`a1-ric` connector): point `A1_BASE_URL` at
+the OSC A1 mediator and `ran-opt-copilot` can read policy types/policies; policy *writes* flow
+through the intent approval ledger.
+
+## Tier 3 — Amarisoft + USRP B2xx (real RF lab — commercial callbox)
+
+For labs with an **Amarisoft callbox** and **Ettus B2xx** SDRs (real COTS phones attach):
+
+- **Amarisoft runs on its own host** (licensed software — nothing to add to this compose). Enable
+  its remote API and point the toolkit at it: `AMARISOFT_WS_URL=ws://<callbox>:9001`. The
+  `amarisoft` connector reads stats/UE lists and executes **approval-gated** control
+  (`config_set`, handover, channel-sim fault injection). Install the optional transport dep:
+  `pip install websockets`.
+- **Executor selection:** `ZORTENET_EXECUTOR=amarisoft` switches intent application from the
+  default `SimulatedExecutor` to real Amarisoft `config_set` calls — approved intents then change
+  the real network. Leave unset for simulated (the honest default).
+- **RF discipline:** prefer a **conducted/shielded** setup (cabled RF or a shield box) — OTA 5G
+  needs spectrum authorization; use **programmable test SIMs** matching the callbox's configured
+  PLMN/Ki/OPc.
+- **vLLM for quality:** serve a large model on the GPU host
+  (`vllm serve <model> --tensor-parallel-size 4`, plus `--enable-auto-tool-choice` and the
+  model-matching `--tool-call-parser` for tool calling) and point the toolkit at it:
+  `ZORTENET_LLM=vllm VLLM_BASE_URL=http://<gpu-host>:8000`.
+
+> **Validation status:** the Amarisoft/A1 connectors are mock-tested against the documented API
+> shapes; the catalog marks both **live-pending** until they're exercised against the real
+> callbox/RIC here. Field schemas vary by Amarisoft release — expect small adapter tweaks on
+> first contact.
+
 ## Tier 3 — Kubernetes / Helm
 
 Open5GS + UERANSIM Helm charts exist upstream (e.g. Gradiant `openverso-charts`, `towards5gs`);

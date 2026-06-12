@@ -1,0 +1,12 @@
+apiVersion: v2
+name: zortenet
+description: >-
+  ZorteNet — The Agentic 5G/6G Toolkit. Deploys the toolkit app (REST + MCP + A2A + ACP + AG-UI
+  faces, capability packs, intent approval ledger) with an optional in-cluster Ollama.
+  Pair with upstream Open5GS/UERANSIM charts (e.g. Gradiant openverso-charts) for the 5G core+RAN.
+type: application
+version: 0.1.0
+appVersion: "0.3.0-dev"
+keywords: [5g, 6g, agentic-ai, mcp, a2a, o-ran, intent]
+sources:
+  - https://github.com/akiskourtis/Agentic-5G-Monitoring-Skill

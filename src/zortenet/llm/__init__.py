@@ -17,21 +17,25 @@ __all__ = ["LLMProvider", "LLMResponse", "ToolSpec", "OllamaProvider", "get_prov
 
 
 def available_providers() -> list[str]:
-    return ["ollama", "openai", "anthropic"]
+    return ["ollama", "vllm", "openai", "anthropic"]
 
 
 def get_provider(name: str | None = None, **kwargs: Any) -> LLMProvider:
     """Return an LLM provider instance.
 
     Args:
-        name: ``"ollama"`` (default), ``"openai"``, or ``"anthropic"``. If omitted, reads
-            ``ZORTENET_LLM`` and defaults to ``"ollama"``.
+        name: ``"ollama"`` (default), ``"vllm"`` (self-hosted GPU serving), ``"openai"``, or
+            ``"anthropic"``. If omitted, reads ``ZORTENET_LLM`` and defaults to ``"ollama"``.
         **kwargs: forwarded to the provider constructor (e.g. ``model=``, ``host=``).
     """
     name = (name or os.getenv("ZORTENET_LLM", "ollama")).lower()
 
     if name == "ollama":
         return OllamaProvider(**kwargs)
+    if name == "vllm":
+        from zortenet.llm.vllm import VLLMProvider  # local-first sibling: requests-only
+
+        return VLLMProvider(**kwargs)
     if name == "openai":
         from zortenet.llm.openai_provider import OpenAIProvider  # lazy, optional
 

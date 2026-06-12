@@ -61,3 +61,41 @@ async def run_stdio(registry: Optional[ToolRegistry] = None, name: str = "zorten
     server = create_server(registry, name)
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
+
+
+def make_streamable_http_app(
+    registry: Optional[ToolRegistry] = None,
+    name: str = "zortenet-5g",
+    json_response: bool = True,
+    stateless: bool = True,
+):
+    """Build the Streamable HTTP face (the MCP remote transport).
+
+    Returns ``(asgi_app, session_manager)``. Mount the ASGI app at a path (e.g. ``/mcp``) and
+    enter ``session_manager.run()`` in the host app's lifespan. Stateless + JSON-response mode
+    is used so each request is independent — the simplest correct deployment for a toolkit
+    endpoint (and what the spec's deprecation of HTTP+SSE pushes toward).
+    """
+    from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+
+    server = create_server(registry, name)
+    manager = StreamableHTTPSessionManager(
+        app=server, json_response=json_response, stateless=stateless
+    )
+
+    async def asgi(scope, receive, send):  # plain ASGI callable, host-framework agnostic
+        await manager.handle_request(scope, receive, send)
+
+    return asgi, manager
+
+
+if __name__ == "__main__":  # pragma: no cover - `python -m zortenet.interop.mcp_server`
+    import anyio
+
+    from zortenet.packs import DEFAULT_PACKS, load_packs
+
+    import os
+
+    pack_names = [p for p in os.getenv("ZORTENET_PACKS", ",".join(DEFAULT_PACKS)).split(",") if p.strip()]
+    reg, _ = load_packs(pack_names)
+    anyio.run(run_stdio, reg)
