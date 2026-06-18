@@ -25,8 +25,37 @@ Transport = Callable[[Dict[str, Any]], Dict[str, Any]]
 DEFAULT_WS_URL = os.getenv("AMARISOFT_WS_URL", "ws://localhost:9001")
 
 
-def websocket_transport(url: str = DEFAULT_WS_URL, timeout: float = 10.0) -> Transport:
-    """Build a one-shot websocket transport (requires ``pip install websockets``)."""
+def _authenticate(ws, ready: Dict[str, Any], password: str, timeout: float) -> None:
+    """HMAC handshake per Amarisoft ws.js (key = ``type:password:name``).
+
+    Best-effort: validated only structurally — the live Mini used here has no password set, so
+    this path is untested against a real auth-enabled component. Confirm if you enable a password.
+    """
+    import hashlib
+    import hmac
+
+    key = f"{ready.get('type')}:{password}:{ready.get('name')}".encode()
+    res = hmac.new(key, ready.get("name", "").encode(), hashlib.sha256).hexdigest()
+    ws.send(json.dumps({"message": "authenticate", "res": res}))
+    ws.recv(timeout=timeout)  # consume the auth result
+
+
+def websocket_transport(
+    url: str = DEFAULT_WS_URL,
+    timeout: float = 10.0,
+    origin: str = "Test",
+    password: Optional[str] = None,
+) -> Transport:
+    """Build a one-shot websocket transport (requires ``pip install websockets``).
+
+    First-contact protocol (verified against a live Amarisoft 2023-12-15 Mini, per their ws.js
+    reference client): the server **requires an ``Origin`` header** on the handshake (the Python
+    ``websockets`` lib omits it by default — that omission is why a bare connect is rejected with
+    "did not receive a valid HTTP response"), and it sends a ``{"message":"ready"}`` frame on
+    connect which must be consumed before issuing a command. Password auth (HMAC) only if the
+    component is configured with one; pass ``password`` or set ``AMARISOFT_WS_PASSWORD``.
+    """
+    password = password or os.getenv("AMARISOFT_WS_PASSWORD")
 
     def send(request: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -35,7 +64,20 @@ def websocket_transport(url: str = DEFAULT_WS_URL, timeout: float = 10.0) -> Tra
             raise RuntimeError(
                 "the Amarisoft websocket transport needs `pip install websockets`"
             ) from exc
-        with connect(url, open_timeout=timeout, close_timeout=timeout) as ws:
+        try:
+            ws = connect(
+                url, additional_headers={"Origin": origin},
+                open_timeout=timeout, close_timeout=timeout,
+            )
+        except TypeError:  # websockets < 13 used `extra_headers`
+            ws = connect(
+                url, extra_headers={"Origin": origin},
+                open_timeout=timeout, close_timeout=timeout,
+            )
+        with ws:
+            ready = json.loads(ws.recv(timeout=timeout))  # consume the 'ready' hello
+            if password and ready.get("message") == "ready":
+                _authenticate(ws, ready, password, timeout)
             ws.send(json.dumps(request))
             return json.loads(ws.recv(timeout=timeout))
 

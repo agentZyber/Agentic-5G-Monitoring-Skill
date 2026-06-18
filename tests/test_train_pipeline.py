@@ -13,7 +13,7 @@ from zortenet.memory.knowledge_base import KnowledgeBase
 from zortenet.packs.self_heal import PLAYBOOKS
 from zortenet.packs.telco_bench.data import load_teleqna_dict
 from zortenet.train.card import generate_model_card
-from zortenet.train.configs import PRESETS, build_config
+from zortenet.train.configs import G0_SHORTLIST, PRESETS, build_config
 from zortenet.train.curate import (
     ContaminationGuard,
     CurationConfig,
@@ -220,6 +220,26 @@ def test_synth_intents_all_validate_and_reproduce():
     assert synth_intent_pairs(10, seed=10) != synth_intent_pairs(10, seed=11)
 
 
+def test_synth_correlation_trajectories_close_the_g0_gap():
+    from zortenet.train.synth import synth_correlation_trajectories
+
+    trajs = synth_correlation_trajectories(8, seed=1)
+    assert len(trajs) == 8
+    for t in trajs:
+        msgs = t["messages"]
+        # the exact tool sequence the bake-off models missed: diagnose -> audit mobility
+        tool_calls = [tc["function"]["name"] for m in msgs for tc in (m.get("tool_calls") or [])]
+        assert tool_calls == ["diagnose_entity", "audit_ue_mobility"]
+        # tool results are REAL (grounded), not fabricated: the audit reports actual distinct cells
+        audit = json.loads([m for m in msgs if m.get("name") == "audit_ue_mobility"][0]["content"])
+        assert audit["distinct_cells"] >= 4
+        # final answer correlates latency with mobility (what the judge wants)
+        final = msgs[-1]["content"].lower()
+        assert "latency" in final and ("mobility" in final or "cell" in final)
+    # reproducible
+    assert synth_correlation_trajectories(8, seed=1)[0]["messages"][1] == trajs[0]["messages"][1]
+
+
 def test_synth_diagnosis_uses_real_playbook_keys():
     pairs = synth_diagnosis_pairs(20, seed=3)
     for pair in pairs:
@@ -291,14 +311,37 @@ def test_failed_gate_blocks():
 
 
 def test_config_presets_cover_the_hardware_story():
-    assert set(PRESETS) == {"qwen2.5-7b", "qwen2.5-32b", "llama-3.1-70b-qlora"}
+    # 7-8B tier (1×24GB) through 70B (4×24GB), both vendor families represented.
+    assert {"qwen3-8b", "qwen2.5-7b", "qwen3-32b", "qwen2.5-32b", "llama-3.1-70b-qlora"}.issubset(PRESETS)
     config = build_config("qwen2.5-32b", train_path="x/train.jsonl")
     assert config["load_in_4bit"] is True
-    assert "4 × 24 GB" in config["hardware"]
+    assert "24 GB" in config["hardware"]
     assert config["train_file"] == "x/train.jsonl"
-    assert "Apache-2.0" in config["note"]  # the licence nudge rides along
+    assert "G0" in config["note"]  # the base is chosen by the bake-off, not asserted
     with pytest.raises(KeyError):
         build_config("gpt-5-pro-max")
+
+
+def test_mistral_alternative_is_present_and_apache():
+    # The Mistral alternative the framework recommends as the Qwen-32B challenger.
+    mistral = build_config("mistral-small-24b")
+    assert mistral["license"] == "Apache-2.0"
+    assert mistral["vllm_tool_call_parser"] == "mistral"  # parser must match the family
+    assert "mistralai/Mistral-Small" in mistral["base_model"]
+    # mid-size Mistral option too
+    assert build_config("mistral-nemo-12b")["license"] == "Apache-2.0"
+
+
+def test_g0_shortlist_is_apache_and_spans_tiers():
+    # Every bake-off candidate must be Apache-2.0 (clean adapter redistribution).
+    for preset in G0_SHORTLIST:
+        assert PRESETS[preset]["license"] == "Apache-2.0", preset
+    # spans the cheap (7-8B) and quality (24-32B) tiers, and both vendors.
+    bases = " ".join(PRESETS[p]["base_model"] for p in G0_SHORTLIST)
+    assert "Qwen" in bases and "mistral" in bases.lower()
+    # Llama-70B is available but NOT in the shortlist (licence) — opt-in only.
+    assert "llama-3.1-70b-qlora" not in G0_SHORTLIST
+    assert "NOT Apache-2.0" in PRESETS["llama-3.1-70b-qlora"]["license"]
 
 
 def test_model_card_is_draft_until_all_gates_pass(tmp_path):

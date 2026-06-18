@@ -44,6 +44,7 @@ def test_load_packs_merges_without_collisions():
     assert "draft_intent" in names  # intent-to-network
     assert "propose_slice_policy" in names  # ran-opt-copilot
     assert "ask_specialist" in names  # multi-agent-noc
+    assert "amari_gnb_status" in names  # amarisoft (opt-in, but enumerable via available_packs)
     assert len(names) == len(set(names))
     assert [m["name"] for m in metas] == [
         "location-monitor",
@@ -54,6 +55,7 @@ def test_load_packs_merges_without_collisions():
         "intent-to-network",
         "ran-opt-copilot",
         "multi-agent-noc",
+        "amarisoft",
     ]
 
 

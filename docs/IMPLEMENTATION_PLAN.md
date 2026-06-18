@@ -70,7 +70,10 @@ items needing the live testbed or Ollama are explicitly left open)*
 
 **Exit gate:** fresh clone → `make testbed-up` → ask the agent a question about the live simulated
 network and get a grounded answer — demonstrated in the README GIF; baselines table published;
-CI green. **Gate not yet met — the three live items above remain.**
+CI green. **Gate not yet met, but the core is now LIVE-VALIDATED (2026-06-12):** the agent
+tool-calling loop ran end-to-end against a real model (`qwen2.5:14b` on a local Ollama GPU node)
+— 3 valid tool calls, 0 errors, answer grounded in the seeded multi-domain store. Remaining:
+testbed bring-up, telco-bench baseline numbers, README GIF.
 
 ## Stage 2 — Multi-domain observability & RAG depth
 
@@ -120,7 +123,11 @@ the *live-data* versions remain open pending testbed access.**
 - [x] **Amarisoft connector** (mock-first): WebSocket-JSON remote-API client
       (stats/ue_get/config_set/handover/channel-sim faults) behind an injectable transport +
       **AmarisoftExecutor** for real intent application (`ZORTENET_EXECUTOR=amarisoft`).
-      **← live validation against the real callbox pending (Tier-3); field schemas vary by release.**
+      **✅ LIVE-VALIDATED (2026-06-12)** against a real Mini (Amarisoft 2023-12-15, 5G NR SA,
+      gNB remote API on `:9001`): first-contact fix applied — the WS handshake **requires an `Origin`
+      header** and the server sends a `ready` frame to consume before commands (regression-tested).
+      `config_get`/`stats`/`ue_list` confirmed against the live gNB. Control/`config_set` still
+      to be exercised live; HMAC auth path untested (the Mini has no password set).
 - [x] **Tier-3 real-RF testbed profile (docs)**: Amarisoft + B2xx wiring, conducted-RF and
       test-SIM discipline, env table. **← the physical bring-up + real-phone attach is the live item.**
 - [x] **O-RAN path (A1)**: `A1PolicyClient` (OSC A1-P REST) + **`ran-opt-copilot` v0** — LLM at

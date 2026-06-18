@@ -17,7 +17,7 @@ __all__ = ["LLMProvider", "LLMResponse", "ToolSpec", "OllamaProvider", "get_prov
 
 
 def available_providers() -> list[str]:
-    return ["ollama", "vllm", "openai", "anthropic"]
+    return ["ollama", "vllm", "transformers", "openai", "anthropic"]
 
 
 def get_provider(name: str | None = None, **kwargs: Any) -> LLMProvider:
@@ -36,6 +36,10 @@ def get_provider(name: str | None = None, **kwargs: Any) -> LLMProvider:
         from zortenet.llm.vllm import VLLMProvider  # local-first sibling: requests-only
 
         return VLLMProvider(**kwargs)
+    if name == "transformers":
+        from zortenet.llm.transformers_provider import TransformersProvider  # serverless local + adapters
+
+        return TransformersProvider(**kwargs)
     if name == "openai":
         from zortenet.llm.openai_provider import OpenAIProvider  # lazy, optional
 

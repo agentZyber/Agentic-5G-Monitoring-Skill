@@ -95,6 +95,35 @@ def test_vllm_model_autodiscovery(monkeypatch):
     assert body["model"] == "served-70b"
 
 
+def test_transformers_provider_tool_call_parsing():
+    # Pure parsing path (no torch): Qwen-style <tool_call> blocks -> runtime tool-call shape.
+    from zortenet.agent.runtime import parse_tool_call
+    from zortenet.llm.transformers_provider import normalize_tool_calls, parse_tool_calls
+
+    text = (
+        'Let me check.\n<tool_call>{"name": "diagnose_entity", "arguments": {"entity_id": "ue-7"}}'
+        '</tool_call>\n<tool_call>{"name": "audit_ue_mobility", "arguments": {"entity_id": "ue-7"}}</tool_call>'
+    )
+    content, calls = parse_tool_calls(text)
+    assert content == "Let me check."
+    assert [c["function"]["name"] for c in calls] == ["diagnose_entity", "audit_ue_mobility"]
+    # the runtime parses what this provider emits
+    assert parse_tool_call(calls[0]) == ("diagnose_entity", {"entity_id": "ue-7"})
+
+    # no tool call -> plain content
+    assert parse_tool_calls("just an answer") == ("just an answer", [])
+
+    # history normalization adds the HF type=function envelope
+    norm = normalize_tool_calls([{"role": "assistant", "tool_calls": [{"function": {"name": "t", "arguments": {}}}]}])
+    assert norm[0]["tool_calls"][0]["type"] == "function"
+
+
+def test_transformers_provider_selectable_and_lazy(monkeypatch):
+    monkeypatch.setenv("ZORTENET_LLM", "transformers")
+    p = get_provider(model="Qwen/Qwen3-8B")
+    assert p.name == "transformers" and p.model == "Qwen/Qwen3-8B"  # construct w/o loading torch
+
+
 def test_get_provider_openai_and_anthropic_construct_and_degrade(monkeypatch):
     # Regression for the review's HIGH finding: these must not raise ModuleNotFoundError, and
     # must degrade gracefully (is_available False) when the optional SDK/key is absent.

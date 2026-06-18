@@ -88,6 +88,18 @@ def create_app(
     executor = _executor_from_env()
     llm = provider or get_provider()
 
+    # Live Amarisoft clients (only when configured) — injected into the `amarisoft` pack by name.
+    def _amari(env_var: str):
+        url = os.getenv(env_var)
+        if not url:
+            return None
+        from zortenet.connectors.amarisoft import AmarisoftClient, websocket_transport
+
+        return AmarisoftClient(transport=websocket_transport(url))
+
+    amarisoft_gnb = _amari("AMARISOFT_WS_URL")
+    amarisoft_core = _amari("AMARISOFT_CORE_WS_URL")
+
     # The NOC specialists (ran/core/security agents) exist only when the pack is enabled.
     specialists = None
     if "multi-agent-noc" in {p.strip().lower() for p in pack_names}:
@@ -104,6 +116,8 @@ def create_app(
             "ledger": ledger,
             "executor": executor,
             "specialists": specialists,
+            "amarisoft": amarisoft_gnb,
+            "amarisoft_core": amarisoft_core,
         },
     )
     traj: Optional[TrajectoryLogger] = (

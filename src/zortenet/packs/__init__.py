@@ -26,6 +26,7 @@ PACK_MODULES: Dict[str, str] = {
     "intent-to-network": "zortenet.packs.intent_to_network",
     "ran-opt-copilot": "zortenet.packs.ran_opt_copilot",
     "multi-agent-noc": "zortenet.multiagent.noc",
+    "amarisoft": "zortenet.packs.amarisoft",  # opt-in (needs a live callbox); enable via ZORTENET_PACKS
 }
 
 DEFAULT_PACKS = (

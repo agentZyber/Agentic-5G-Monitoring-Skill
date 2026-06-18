@@ -125,6 +125,76 @@ def synth_intent_pairs(n: int = 100, seed: int = 42) -> List[Dict[str, Any]]:
     return pairs
 
 
+def synth_correlation_trajectories(n: int = 40, seed: int = 42) -> List[Dict[str, Any]]:
+    """Gold multi-step demonstrations for the G0-identified gap: cross-domain correlation.
+
+    Each trajectory seeds a real EventStore (a UE with a QoS alert + mobility across cells), then
+    executes the *ideal* tool sequence against the REAL pack tools — ``diagnose_entity`` then
+    ``audit_ue_mobility`` — capturing genuine tool outputs, and emits a final answer that
+    correlates them. This teaches the exact habit the bake-off models missed (diagnose → audit
+    mobility → conclude UE-specific vs network-wide). Grounded, not fabricated: the tool results
+    are real, and the trajectory passes the TeleAgentBench qos-mobility judge by construction.
+    """
+    from zortenet.agent.tools import ToolRegistry
+    from zortenet.core.bus import EventStore
+    from zortenet.core.events import EventDomain, NetworkEvent, Severity
+    from zortenet.packs.security_sentinel import build_registry as security_registry
+    from zortenet.packs.self_heal import build_registry as selfheal_registry
+
+    rng = random.Random(seed)
+    system = (
+        "You are a 5G network operations agent. Diagnose issues by gathering evidence with tools; "
+        "when a UE reports QoS problems, ALWAYS correlate with its mobility before concluding "
+        "whether the issue is UE-specific or network-wide."
+    )
+    out: List[Dict[str, Any]] = []
+    for _ in range(n):
+        ue = f"ue-{rng.randint(1, 250)}"
+        latency = rng.randint(150, 400)
+        # sample WITHOUT replacement so every demo is a clean cell-hopping case (>= threshold)
+        cells = rng.sample([f"C{i}" for i in range(1, 10)], k=rng.randint(4, 6))
+
+        store = EventStore()
+        for cell in cells:
+            store.append(NetworkEvent(domain=EventDomain.LOCATION, source="synth", entity_id=ue,
+                                      event_type="LOCATION_REPORTING", payload={"cell_id": cell}))
+        store.append(NetworkEvent(domain=EventDomain.QOS, source="synth", entity_id=ue,
+                                   severity=Severity.ALERT, event_type="QOS_MONITORING",
+                                   payload={"latency_ms": latency}))
+
+        reg = ToolRegistry()
+        for t in selfheal_registry(store=store).list() + security_registry(store=store).list():
+            if t.name not in reg:
+                reg.register(t)
+
+        diag = reg.get("diagnose_entity").invoke(entity_id=ue)        # real tool output
+        audit = reg.get("audit_ue_mobility").invoke(entity_id=ue)     # real tool output
+
+        final = (
+            f"{ue}'s latency is elevated (~{latency} ms vs a ~20 ms baseline) and it has moved "
+            f"across {audit['distinct_cells']} cells "
+            f"({'cell-hopping detected' if audit['cell_hopping'] else 'normal mobility'}). "
+            f"The degradation is UE-specific and correlates with its mobility — investigate "
+            f"handover/coverage for {ue} rather than a network-wide fault."
+        )
+        out.append({
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content":
+                    f"{ue} reports poor latency. Diagnose why — is it UE-specific or network-wide?"},
+                {"role": "assistant", "content": "",
+                 "tool_calls": [{"function": {"name": "diagnose_entity", "arguments": {"entity_id": ue}}}]},
+                {"role": "tool", "name": "diagnose_entity", "content": json.dumps(diag, default=str)},
+                {"role": "assistant", "content": "",
+                 "tool_calls": [{"function": {"name": "audit_ue_mobility", "arguments": {"entity_id": ue}}}]},
+                {"role": "tool", "name": "audit_ue_mobility", "content": json.dumps(audit, default=str)},
+                {"role": "assistant", "content": final},
+            ],
+            "meta": {"source": "synth-correlation", "ue": ue, "seed": seed},
+        })
+    return out
+
+
 def synth_diagnosis_pairs(n: int = 100, seed: int = 42) -> List[Dict[str, Any]]:
     """Generate evidence→diagnosis pairs; suspected_issue always a real playbook key."""
     rng = random.Random(seed)

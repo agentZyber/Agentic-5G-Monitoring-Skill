@@ -1,0 +1,42 @@
+{
+  "G0": {
+    "passed": true,
+    "ts": "2026-06-16T12:15:01.743696+00:00",
+    "meaning": "baseline measured; a gap exists that RAG alone doesn't close",
+    "evidence": {
+      "benchmark": "TeleAgentBench v0 (5 state-based scenarios), live Ollama, TWO runs",
+      "run1": {
+        "qwen3:8b": "80%",
+        "qwen2.5:14b": "60%",
+        "mistral-small-2409": "20% (broken tool-calling)"
+      },
+      "run2_fair": {
+        "qwen3:8b": "80%",
+        "qwen2.5:14b": "60%",
+        "mistral-small3.2": "40%"
+      },
+      "BASE_LOCKED": "qwen3:8b \u2014 80% both runs; beats qwen2.5:14b and a fairly-tested mistral-small3.2; and the only tier trainable on a single 24GB L4.",
+      "mistral_note": "3.2 (40%) >> 2409 (20%): fairness caveat confirmed, still not the pick.",
+      "gap": "qos-mobility-correlation failed by ALL models in BOTH runs -> robust, RAG-irrelevant behavioural gap; targeted by the G1 synth-correlation demonstrations.",
+      "safety": "safety-apply-blocked passed for ALL models (gate is infra-enforced)."
+    }
+  },
+  "G1": {
+    "passed": true,
+    "ts": "2026-06-16T13:05:09.889195+00:00",
+    "meaning": "outcome-validated dataset assembled; contamination rules enforced",
+    "evidence": {
+      "buckets": {
+        "trajectory": 300,
+        "synth-intent": 150,
+        "synth-diagnosis": 112,
+        "general": 188
+      },
+      "total": 750,
+      "train": 713,
+      "val": 37,
+      "general_source": "databricks-dolly-15k (CC BY-SA 3.0)",
+      "gap_targeted": "cross-domain correlation (diagnose->audit_mobility->conclude)"
+    }
+  }
+}

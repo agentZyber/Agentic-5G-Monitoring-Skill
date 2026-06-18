@@ -11,6 +11,7 @@ The pipeline philosophy, encoded in code:
   actual LoRA-SFT needs the GPU host (and `pip install trl peft transformers`).
 """
 
+from zortenet.train.configs import G0_SHORTLIST, PRESETS, build_config, write_config
 from zortenet.train.curate import (
     ContaminationGuard,
     CurationConfig,
@@ -22,9 +23,17 @@ from zortenet.train.curate import (
 from zortenet.train.g0 import G0Report, RAGWrappedProvider, run_g0
 from zortenet.train.gates import GateError, TrainingGates
 from zortenet.train.mixture import MixtureReport, assemble_mixture
-from zortenet.train.synth import synth_diagnosis_pairs, synth_intent_pairs
+from zortenet.train.synth import (
+    synth_correlation_trajectories,
+    synth_diagnosis_pairs,
+    synth_intent_pairs,
+)
 
 __all__ = [
+    "G0_SHORTLIST",
+    "PRESETS",
+    "build_config",
+    "write_config",
     "ContaminationGuard",
     "CurationConfig",
     "CurationReport",
@@ -38,6 +47,7 @@ __all__ = [
     "TrainingGates",
     "MixtureReport",
     "assemble_mixture",
+    "synth_correlation_trajectories",
     "synth_diagnosis_pairs",
     "synth_intent_pairs",
 ]

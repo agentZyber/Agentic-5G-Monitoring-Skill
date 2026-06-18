@@ -1,6 +1,8 @@
 """Amarisoft connector + executor against a fake transport (live validation is Tier-3 scope)."""
 
-from zortenet.connectors.amarisoft import AmarisoftClient, AmarisoftExecutor
+import json
+
+from zortenet.connectors.amarisoft import AmarisoftClient, AmarisoftExecutor, websocket_transport
 from zortenet.intent.models import Expectation, NetworkIntent
 
 
@@ -78,6 +80,46 @@ def test_executor_plan_and_apply_real_calls():
     assert outcome["ok"] is True
     assert transport.requests[0]["message"] == "config_set"
     assert transport.requests[0]["rate_limit"]["object"] == "slice-embb-01"
+
+
+def test_websocket_transport_sends_origin_and_consumes_ready(monkeypatch):
+    # Regression for the live first-contact fix: Amarisoft rejects the handshake without an
+    # Origin header, and sends a `ready` frame that must be consumed before the command reply.
+    import websockets.sync.client as wsc
+
+    captured = {}
+
+    class FakeWS:
+        def __init__(self):
+            self._frames = [
+                json.dumps({"message": "ready", "name": "ENB", "type": "ENB"}),
+                json.dumps({"message": "stats", "cells": {"1": {"dl_use": 0.3}}}),
+            ]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def recv(self, timeout=None):
+            return self._frames.pop(0)
+
+        def send(self, data):
+            captured["sent"] = json.loads(data)
+
+    def fake_connect(url, **kw):
+        captured["url"] = url
+        captured["headers"] = kw.get("additional_headers") or kw.get("extra_headers")
+        return FakeWS()
+
+    monkeypatch.setattr(wsc, "connect", fake_connect)
+    transport = websocket_transport("ws://10.50.101.62:9001/")
+    resp = transport({"message": "stats"})
+
+    assert captured["headers"]["Origin"] == "Test"        # the essential header
+    assert captured["sent"] == {"message": "stats"}        # 'ready' consumed, then our command sent
+    assert resp["cells"]["1"]["dl_use"] == 0.3             # we got the command reply, not the hello
 
 
 def test_executor_unmapped_metric_is_skipped_not_executed():

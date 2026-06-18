@@ -88,8 +88,20 @@ Reference: 4 × 24 GB (96 GB total). All numbers are engineering estimates, not 
 - **Tooling:** any of TRL / Axolotl / torchtune / Unsloth; DPO via TRL. Keep configs in `training/`
   in-repo so the run is reproducible (`zortenet train` CLI is the M3 design intent — capture →
   curate → tune → eval as one loop).
-- **Base model:** prefer an **Apache-2.0-licensed base** (e.g. Qwen-family) for clean
-  redistribution of fine-tuned weights; Llama-family licenses add terms — check at selection time.
+- **Base model — chosen by G0's bake-off, not asserted** (`zortenet.train.configs.G0_SHORTLIST`).
+  The framework's demand on the base is overwhelmingly **tool calling + structured output +
+  multi-step**, so the shortlist is Apache-2.0 strong tool-callers (clean adapter redistribution):
+
+  | Tier | Front-runner | Mistral alternative |
+  |---|---|---|
+  | **24–32B** (quality / hard reasoning) | **Qwen3-32B** (or Qwen2.5-32B for ecosystem maturity) | **Mistral Small 3.2 24B** — Apache-2.0, agentic/function-calling-tuned, lighter than 32B |
+  | **7–12B** (cheap / edge; route routine packs here) | **Qwen3-8B** (or Qwen2.5-7B) | **Mistral NeMo 12B** — Apache-2.0, 128k ctx |
+
+  *Llama-3.1-70B is available as a preset but **not** shortlisted (Community licence restricts
+  weight redistribution; only reach for it if 24–32B measurably falls short.)* **LoRA-SFT** (QLoRA
+  for ≥24B) is the right method — full-FT/pretrain buy nothing here. The `vllm_tool_call_parser`
+  must match the family (`hermes` for Qwen, `mistral` for Mistral) or tool calling silently breaks.
+  Recency caveat: confirm current point releases at selection time.
 
 ## 4. Evaluation protocol — the gates
 
