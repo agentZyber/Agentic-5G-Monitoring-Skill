@@ -27,6 +27,17 @@ PACK_MODULES: Dict[str, str] = {
     "ran-opt-copilot": "zortenet.packs.ran_opt_copilot",
     "multi-agent-noc": "zortenet.multiagent.noc",
     "amarisoft": "zortenet.packs.amarisoft",  # opt-in (needs a live callbox); enable via ZORTENET_PACKS
+    # 6G use-case operations packs (ITU-R IMT-2030 scenarios + overarching aspects). Opt-in: each
+    # exposes the same overview/assess/correlate/recommend shape over its domain (read-only;
+    # actuation routes through intent-to-network). Enable via ZORTENET_PACKS or the "6g" selector.
+    "energy-agent": "zortenet.packs.energy_agent",      # Sustainability (overarching)
+    "xr-qoe": "zortenet.packs.xr_qoe",                  # Immersive Communication
+    "massive-iot": "zortenet.packs.massive_iot",        # Massive Communication (mMTC)
+    "v2x-ops": "zortenet.packs.v2x_ops",                # Hyper-Reliable Low-Latency (URLLC/V2X)
+    "ntn-ops": "zortenet.packs.ntn_ops",                # Ubiquitous Connectivity (NTN)
+    "ai-native": "zortenet.packs.ai_native",            # Integrated AI & Communication (NWDAF)
+    "sensing-ops": "zortenet.packs.sensing_ops",        # Integrated Sensing & Communication (ISAC)
+    "uav-ops": "zortenet.packs.uav_ops",                # aerial connectivity (Ubiquitous)
 }
 
 DEFAULT_PACKS = (
@@ -38,6 +49,18 @@ DEFAULT_PACKS = (
     "intent-to-network",
     "ran-opt-copilot",
     "multi-agent-noc",
+)
+
+# The 6G use-case pack family — load all with load_packs(SIXG_PACKS, ...) or names=["6g"].
+SIXG_PACKS = (
+    "energy-agent",
+    "xr-qoe",
+    "massive-iot",
+    "v2x-ops",
+    "ntn-ops",
+    "ai-native",
+    "sensing-ops",
+    "uav-ops",
 )
 
 
@@ -57,7 +80,15 @@ def load_packs(
     context = context or {}
     merged = ToolRegistry()
     metas: List[Dict[str, Any]] = []
+    # expand group aliases ("6g" -> all IMT-2030 use-case packs) while preserving order/dedup
+    expanded: List[str] = []
     for name in names:
+        low = name.strip().lower()
+        chunk = SIXG_PACKS if low in ("6g", "all-6g", "sixg") else (name,)
+        for n in chunk:
+            if n not in expanded:
+                expanded.append(n)
+    for name in expanded:
         key = name.strip().lower()
         if not key:
             continue
@@ -72,4 +103,4 @@ def load_packs(
     return merged, metas
 
 
-__all__ = ["PACK_MODULES", "DEFAULT_PACKS", "available_packs", "load_packs"]
+__all__ = ["PACK_MODULES", "DEFAULT_PACKS", "SIXG_PACKS", "available_packs", "load_packs"]

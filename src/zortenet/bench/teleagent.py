@@ -271,6 +271,130 @@ def builtin_scenarios() -> List[Scenario]:
     return scenarios
 
 
+# ---- 6G use-case scenarios (one per IMT-2030 pack; held-out, same contract) -------------
+
+# scenario_id -> the pack that must be loaded for it (plus DEFAULT_PACKS) when running.
+SIXG_SCENARIO_PACKS: Dict[str, str] = {
+    "energy-saving-correlation": "energy-agent",
+    "xr-qoe-correlation": "xr-qoe",
+    "massive-iot-correlation": "massive-iot",
+    "v2x-reliability-correlation": "v2x-ops",
+    "ntn-link-correlation": "ntn-ops",
+    "ai-native-correlation": "ai-native",
+    "sensing-correlation": "sensing-ops",
+    "uav-coverage-correlation": "uav-ops",
+}
+
+
+def sixg_scenarios() -> List[Scenario]:
+    """Held-out per-use-case correlation scenarios — one per IMT-2030 pack.
+
+    Each seeds ONE degraded entity among healthy peers (correct verdict = entity-specific) and
+    judges the agentic loop programmatically: did the agent run the pack's ``assess_*`` then
+    ``correlate_*`` tool and name the degraded entity? Run with the matching pack loaded — see
+    :data:`SIXG_SCENARIO_PACKS` (pass ``packs=list(DEFAULT_PACKS)+[pack]`` to the runner).
+    """
+    D = EventDomain
+
+    def pub(bus, domain, eid, payload, sev=Severity.INFO, et=""):
+        bus.publish(NetworkEvent(domain=domain, source="bench", entity_id=eid,
+                                 payload=payload, severity=sev, event_type=et))
+
+    def setup_energy(ctx):
+        pub(ctx.bus, D.ENERGY, "cell-7", {"power_w": 40.0}); pub(ctx.bus, D.THROUGHPUT, "cell-7", {"prb_util": 3.0})
+        pub(ctx.bus, D.ENERGY, "cell-8", {"power_w": 40.0}); pub(ctx.bus, D.THROUGHPUT, "cell-8", {"prb_util": 88.0})
+
+    def setup_xr(ctx):
+        pub(ctx.bus, D.QOS, "flow-7", {"latency_ms": 65.0, "jitter_ms": 9.0, "packet_loss": 0.05}, Severity.ALERT)
+        pub(ctx.bus, D.THROUGHPUT, "flow-7", {"dl_mbps": 18.0})
+        pub(ctx.bus, D.QOS, "flow-8", {"latency_ms": 8.0, "jitter_ms": 1.0, "packet_loss": 0.0})
+        pub(ctx.bus, D.THROUGHPUT, "flow-8", {"dl_mbps": 120.0})
+
+    def setup_iot(ctx):
+        pub(ctx.bus, D.SIGNALING, "cell-7", {"rach_attempts": 160.0, "attach_attempts": 100.0, "attach_failures": 35.0})
+        pub(ctx.bus, D.SIGNALING, "cell-8", {"rach_attempts": 18.0, "attach_attempts": 100.0, "attach_failures": 2.0})
+
+    def setup_v2x(ctx):
+        pub(ctx.bus, D.QOS, "veh-7", {"latency_ms": 28.0, "reliability": 0.99}, Severity.ALERT)
+        pub(ctx.bus, D.RAN_KPI, "veh-7", {"cqi": 3.0, "sinr": 2.0})
+        pub(ctx.bus, D.QOS, "veh-8", {"latency_ms": 4.0, "reliability": 0.99999})
+        pub(ctx.bus, D.RAN_KPI, "veh-8", {"cqi": 13.0, "sinr": 25.0})
+
+    def setup_ntn(ctx):
+        pub(ctx.bus, D.RAN_KPI, "term-7", {"propagation_delay_ms": 25.0, "doppler_hz": 1000.0, "sinr": -4.0, "beam_id": "B1"})
+        pub(ctx.bus, D.RAN_KPI, "term-8", {"propagation_delay_ms": 25.0, "doppler_hz": 1000.0, "sinr": 12.0, "beam_id": "B1"})
+
+    def setup_ai(ctx):
+        pub(ctx.bus, D.SLICE, "slice-7", {"observed": 50.0, "predicted": 100.0, "metric": "throughput"})
+        pub(ctx.bus, D.SLICE, "slice-8", {"observed": 99.0, "predicted": 100.0, "metric": "throughput"})
+
+    def setup_sensing(ctx):
+        pub(ctx.bus, D.SENSING, "scell-7", {"sensing_snr_db": 5.0, "detections": 1, "range_m": 100.0, "velocity_mps": 10.0})
+        pub(ctx.bus, D.THROUGHPUT, "scell-7", {"prb_util": 20.0})
+        pub(ctx.bus, D.SENSING, "scell-8", {"sensing_snr_db": 18.0, "detections": 5, "range_m": 80.0, "velocity_mps": 5.0})
+        pub(ctx.bus, D.THROUGHPUT, "scell-8", {"prb_util": 30.0})
+
+    def setup_uav(ctx):
+        for c in ["C1", "C2", "C3", "C4", "C5"]:
+            pub(ctx.bus, D.LOCATION, "uav-7", {"cell_id": c}, et="LOCATION_REPORTING")
+        pub(ctx.bus, D.RAN_KPI, "uav-7", {"ul_interference_db": -90.0, "altitude_m": 120.0, "sinr": 3.0, "cqi": 5.0})
+        pub(ctx.bus, D.LOCATION, "uav-8", {"cell_id": "C1"}, et="LOCATION_REPORTING")
+        pub(ctx.bus, D.RAN_KPI, "uav-8", {"ul_interference_db": -115.0, "altitude_m": 110.0, "sinr": 22.0, "cqi": 14.0})
+
+    # (scenario_id, ask, assess_tool, correlate_tool, degraded_entity, setup, description)
+    specs = [
+        ("energy-saving-correlation",
+         "Is cell-7 wasting energy, or is the whole network over-provisioned? Decide and justify.",
+         "assess_cell_energy", "correlate_energy_load", "cell-7", setup_energy,
+         "One idle-but-powered cell among loaded peers — energy-saving candidate is cell-specific."),
+        ("xr-qoe-correlation",
+         "XR flow flow-7 is stuttering. Is the cause specific to this flow or network-wide?",
+         "assess_xr_flow", "correlate_xr_qoe", "flow-7", setup_xr,
+         "One XR flow breaches the QoE budget while a peer is fine — flow-specific."),
+        ("massive-iot-correlation",
+         "IoT access on cell-7 looks bad. Is it just this cell or a network-wide storm?",
+         "assess_iot_cell", "correlate_iot_congestion", "cell-7", setup_iot,
+         "One cell in a RACH storm among healthy peers — cell-specific congestion."),
+        ("v2x-reliability-correlation",
+         "Vehicle veh-7 misses its URLLC budget. Is it this vehicle's radio or cell-wide congestion?",
+         "assess_vehicle", "correlate_v2x_reliability", "veh-7", setup_v2x,
+         "One vehicle with poor radio breaches URLLC while a peer is fine — vehicle-specific."),
+        ("ntn-link-correlation",
+         "NTN terminal term-7 has a poor link. Is it terminal-specific or beam-wide?",
+         "assess_ntn_terminal", "correlate_ntn_link", "term-7", setup_ntn,
+         "One terminal degraded on a beam whose other terminal is fine — terminal-specific."),
+        ("ai-native-correlation",
+         "Analytics for slice-7 deviate from prediction. Entity-specific or systemic model drift?",
+         "assess_analytics", "correlate_predictions", "slice-7", setup_ai,
+         "One slice's observed KPI deviates from prediction while a peer tracks it — entity-specific."),
+        ("sensing-correlation",
+         "Sensing at scell-7 is weak. Is it comms-sensing contention or target/clutter-specific?",
+         "assess_sensing_cell", "correlate_sensing_comms", "scell-7", setup_sensing,
+         "One weak-sensing cell with low comms load — target/clutter-specific, not contention."),
+        ("uav-coverage-correlation",
+         "Aerial UE uav-7 has poor radio. Is it UE-specific or cell-wide aerial interference?",
+         "assess_aerial_ue", "correlate_uav_coverage", "uav-7", setup_uav,
+         "One aerial UE with interference/handover-thrash among fine peers — UE-specific."),
+    ]
+
+    def make(spec):
+        sid, ask, assess, correlate, entity, setup, desc = spec
+
+        def judge(result, ctx, assess=assess, correlate=correlate, entity=entity):
+            used = tools_called(result)
+            return [
+                Check(f"used:{assess}", assess in used,
+                      "assessed" if assess in used else f"never called {assess}"),
+                Check(f"used:{correlate}", correlate in used,
+                      "correlated" if correlate in used else f"never called {correlate} (the key step)"),
+                _check_answer_mentions(result, entity),
+            ]
+
+        return Scenario(scenario_id=sid, ask=ask, setup=setup, judge=judge, description=desc)
+
+    return [make(s) for s in specs]
+
+
 # ---- runner ----------------------------------------------------------------------------
 
 

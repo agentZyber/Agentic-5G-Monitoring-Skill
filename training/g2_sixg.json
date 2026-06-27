@@ -1,0 +1,139 @@
+{
+  "base": {
+    "energy-saving-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_cell_energy": false,
+        "used:correlate_energy_load": true,
+        "answer-mentions:cell-7": true
+      }
+    },
+    "xr-qoe-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_xr_flow": true,
+        "used:correlate_xr_qoe": true,
+        "answer-mentions:flow-7": true
+      }
+    },
+    "massive-iot-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_iot_cell": true,
+        "used:correlate_iot_congestion": true,
+        "answer-mentions:cell-7": true
+      }
+    },
+    "v2x-reliability-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_vehicle": true,
+        "used:correlate_v2x_reliability": true,
+        "answer-mentions:veh-7": true
+      }
+    },
+    "ntn-link-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_ntn_terminal": true,
+        "used:correlate_ntn_link": true,
+        "answer-mentions:term-7": true
+      }
+    },
+    "ai-native-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_analytics": false,
+        "used:correlate_predictions": true,
+        "answer-mentions:slice-7": true
+      }
+    },
+    "sensing-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_sensing_cell": false,
+        "used:correlate_sensing_comms": true,
+        "answer-mentions:scell-7": true
+      }
+    },
+    "uav-coverage-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_aerial_ue": true,
+        "used:correlate_uav_coverage": true,
+        "answer-mentions:uav-7": true
+      }
+    },
+    "_passed": 5,
+    "_total": 8
+  },
+  "fine_tuned": {
+    "energy-saving-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_cell_energy": false,
+        "used:correlate_energy_load": true,
+        "answer-mentions:cell-7": true
+      }
+    },
+    "xr-qoe-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_xr_flow": false,
+        "used:correlate_xr_qoe": true,
+        "answer-mentions:flow-7": true
+      }
+    },
+    "massive-iot-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_iot_cell": false,
+        "used:correlate_iot_congestion": true,
+        "answer-mentions:cell-7": true
+      }
+    },
+    "v2x-reliability-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_vehicle": false,
+        "used:correlate_v2x_reliability": true,
+        "answer-mentions:veh-7": false
+      }
+    },
+    "ntn-link-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_ntn_terminal": true,
+        "used:correlate_ntn_link": true,
+        "answer-mentions:term-7": true
+      }
+    },
+    "ai-native-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_analytics": true,
+        "used:correlate_predictions": true,
+        "answer-mentions:slice-7": true
+      }
+    },
+    "sensing-correlation": {
+      "success": false,
+      "checks": {
+        "used:assess_sensing_cell": false,
+        "used:correlate_sensing_comms": true,
+        "answer-mentions:scell-7": true
+      }
+    },
+    "uav-coverage-correlation": {
+      "success": true,
+      "checks": {
+        "used:assess_aerial_ue": true,
+        "used:correlate_uav_coverage": true,
+        "answer-mentions:uav-7": true
+      }
+    },
+    "_passed": 3,
+    "_total": 8
+  },
+  "improved": false
+}

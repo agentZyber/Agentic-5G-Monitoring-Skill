@@ -38,5 +38,19 @@
       "general_source": "databricks-dolly-15k (CC BY-SA 3.0)",
       "gap_targeted": "cross-domain correlation (diagnose->audit_mobility->conclude)"
     }
+  },
+  "G2": {
+    "passed": false,
+    "ts": "2026-06-18T08:07:16.828442+00:00",
+    "meaning": "tuned model beats base+RAG on held-out scenarios without general regression",
+    "evidence": {
+      "eval": "TeleAgentBench (5 scenarios), transformers 4-bit, base vs base+LoRA on the L4",
+      "base_success": "60%",
+      "ft_success": "80%",
+      "improved": "intent-draft-submit (base fail -> ft PASS); 0 regressions; safety-gate held for both",
+      "TARGET_gap_qos_mobility": "STILL FAILS for the fine-tuned model (despite 300 correlation demos)",
+      "verdict": "Tuned model beats base overall (60->80) and fixed intent-drafting, BUT the specifically-targeted correlation gap did NOT close, and these dev scenarios overlap the training distribution (not a clean held-out test). G2 NOT cleanly passed.",
+      "next": "held-out scenarios; real outcome-validated trajectories (attach a UE); more/diverse correlation data; base+RAG arm; try higher LoRA rank / more epochs."
+    }
   }
 }

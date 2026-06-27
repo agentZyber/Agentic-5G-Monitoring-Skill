@@ -99,6 +99,39 @@ def build_registry(
         return {"cell_id": cell_id, **{k: v for k, v in cell.items() if not isinstance(v, (dict, list))}}
 
     @reg.tool(
+        name="amari_cell_power",
+        description=(
+            "DL transmit power per cell: the relative power offset (0 dB = nominal; negative = "
+            "reduced coverage) and the absolute RF gain. Use this to decide whether a UE's degraded "
+            "radio is explained by a CELL-WIDE power reduction or is UE-SPECIFIC: if the cell power "
+            "is nominal (0 dB) but only one UE is degraded, the cause is UE-specific, not the cell."
+        ),
+        tags=("amarisoft", "ran", "power"),
+    )
+    def amari_cell_power() -> Any:
+        if gnb is None:
+            return _UNAVAILABLE.format(what="gNB", env="AMARISOFT_WS_URL")
+        cfg = gnb.config_get().get("response") or {}
+        cells = cfg.get("nr_cells") or {}
+        tx = cfg.get("tx_channels") or []
+        # the live box returns nr_cells as a dict {"1": {...}}; tolerate a list too
+        items = cells.items() if isinstance(cells, dict) else [
+            (str(c.get("cell_id", i)), c) for i, c in enumerate(cells)
+        ]
+        out = []
+        for cid, c in items:
+            offset = c.get("gain", 0)
+            port = c.get("rf_port", 0)
+            abs_gain = tx[port].get("gain") if isinstance(tx, list) and port < len(tx) else None
+            out.append({
+                "cell_id": cid,
+                "power_offset_db": offset,
+                "status": "nominal" if offset == 0 else f"reduced by {abs(offset)} dB (coverage degraded)",
+                "rf_abs_gain_db": abs_gain,
+            })
+        return {"cells": out}
+
+    @reg.tool(
         name="amari_core_registration",
         description="Registered-UE count and NG(5G)/S1(LTE) connections from the core.",
         tags=("amarisoft", "core"),

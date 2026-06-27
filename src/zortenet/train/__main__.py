@@ -21,8 +21,8 @@ from zortenet.train.curate import (
 )
 from zortenet.train.g0 import run_g0
 from zortenet.train.gates import GateError, TrainingGates
-from zortenet.train.mixture import assemble_mixture
-from zortenet.train.synth import synth_diagnosis_pairs, synth_intent_pairs
+from zortenet.train.mixture import SIXG_RATIOS, assemble_mixture
+from zortenet.train.synth import synth_diagnosis_pairs, synth_intent_pairs, synth_uc_trajectories
 
 
 def main(argv=None) -> int:
@@ -48,6 +48,8 @@ def main(argv=None) -> int:
     synth_parser = sub.add_parser("synth", help="Generate machine-validated synthetic pairs.")
     synth_parser.add_argument("--intents", type=int, default=200)
     synth_parser.add_argument("--diagnosis", type=int, default=150)
+    synth_parser.add_argument("--uc-per", type=int, default=0,
+                              help="Per-use-case correlation trajectories (all 8 6G packs). 0=skip.")
     synth_parser.add_argument("--seed", type=int, default=42)
     synth_parser.add_argument("--out", default="training/dataset")
 
@@ -55,6 +57,10 @@ def main(argv=None) -> int:
     mix_parser.add_argument("--dataset-dir", default="training/dataset")
     mix_parser.add_argument("--general", default=None,
                             help="Path to a general-instruction JSONL (strongly recommended).")
+    mix_parser.add_argument("--multi-uc", action="store_true",
+                            help="Use the multi-use-case (v2.5) ratios incl. the synth-uc bucket.")
+    mix_parser.add_argument("--total", type=int, default=None,
+                            help="Target mixture size (default: largest feasible at the ratios).")
 
     config_parser = sub.add_parser("config", help="Emit a LoRA-SFT config (requires G1 passed).")
     config_parser.add_argument("--preset", default="qwen2.5-7b")
@@ -116,7 +122,12 @@ def main(argv=None) -> int:
         diagnosis = synth_diagnosis_pairs(args.diagnosis, seed=args.seed)
         write_jsonl(intents, out / "synth-intent.jsonl")
         write_jsonl(diagnosis, out / "synth-diagnosis.jsonl")
-        print(f"wrote {len(intents)} intent pairs, {len(diagnosis)} diagnosis pairs → {out}/")
+        msg = f"wrote {len(intents)} intent pairs, {len(diagnosis)} diagnosis pairs"
+        if args.uc_per > 0:
+            uc = synth_uc_trajectories(n_per_uc=args.uc_per, seed=args.seed)
+            write_jsonl(uc, out / "synth-uc.jsonl")
+            msg += f", {len(uc)} per-UC trajectories (all 6G packs)"
+        print(f"{msg} → {out}/")
         return 0
 
     if args.command == "mixture":
@@ -130,6 +141,7 @@ def main(argv=None) -> int:
 
         buckets = {
             "trajectory": _load("trajectories.curated.jsonl"),
+            "synth-uc": _load("synth-uc.jsonl"),
             "synth-intent": _load("synth-intent.jsonl"),
             "synth-diagnosis": _load("synth-diagnosis.jsonl"),
             "general": (
@@ -138,7 +150,8 @@ def main(argv=None) -> int:
                 else []
             ),
         }
-        mixed, report = assemble_mixture(buckets)
+        ratios = SIXG_RATIOS if args.multi_uc else None
+        mixed, report = assemble_mixture(buckets, ratios=ratios, total=args.total)
         train, val = split_train_val(mixed)
         write_jsonl(train, dataset_dir / "train.jsonl")
         write_jsonl(val, dataset_dir / "val.jsonl")

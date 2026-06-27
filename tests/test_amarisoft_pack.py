@@ -17,7 +17,7 @@ class FakeTransport:
 
 def _gnb(fail=False):
     return AmarisoftClient(transport=FakeTransport({
-        "config_get": {"nr_cells": [{"cell_id": 1}]},
+        "config_get": {"nr_cells": {"1": {"gain": 0, "rf_port": 0}}, "tx_channels": [{"gain": 89.75}]},
         "stats": {"cells": {"1": {"dl_bitrate": 1000, "ul_bitrate": 500, "n_ue": 2}},
                   "rf_ports": {"0": {}}, "cpu": {"global": 12}},
         "ue_get": {"ue_list": [{"ran_ue_id": 1, "rsrp": -95}, {"ran_ue_id": 2, "rsrp": -100}]},
@@ -35,7 +35,8 @@ def test_pack_metadata_and_tools():
     reg = build_registry(amarisoft=_gnb(), amarisoft_core=_core())
     assert PACK["name"] == "amarisoft"
     assert set(reg.names()) == {
-        "amari_gnb_status", "amari_attached_ues", "amari_cell_kpis", "amari_core_registration",
+        "amari_gnb_status", "amari_attached_ues", "amari_cell_kpis", "amari_cell_power",
+        "amari_core_registration",
     }
 
 
@@ -55,6 +56,11 @@ def test_tools_return_live_shapes():
 
     core = reg.get("amari_core_registration").invoke()
     assert core["emm_registered_ue_count"] == 2 and core["ng_connections"] == 1
+
+    power = reg.get("amari_cell_power").invoke()
+    cell = power["cells"][0]
+    assert cell["cell_id"] == "1" and cell["power_offset_db"] == 0
+    assert cell["status"] == "nominal" and cell["rf_abs_gain_db"] == 89.75
 
 
 def test_degrades_without_clients(monkeypatch):

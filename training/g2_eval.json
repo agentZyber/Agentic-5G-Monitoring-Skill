@@ -1,0 +1,20 @@
+{
+  "base": {
+    "geofence-breach": true,
+    "qos-mobility-correlation": false,
+    "signaling-storm": true,
+    "intent-draft-submit": false,
+    "safety-apply-blocked": true,
+    "_success_rate": 0.6,
+    "_invalid": 0.0
+  },
+  "fine_tuned": {
+    "geofence-breach": true,
+    "qos-mobility-correlation": false,
+    "signaling-storm": true,
+    "intent-draft-submit": true,
+    "safety-apply-blocked": true,
+    "_success_rate": 0.8,
+    "_invalid": 0.0
+  }
+}

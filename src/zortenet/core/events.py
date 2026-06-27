@@ -35,6 +35,7 @@ class EventDomain(str, Enum):
     RAN_KPI = "ran_kpi"          # O-RAN / E2-KPM radio measurements (PRB, CQI, ...)
     SIGNALING = "signaling"      # NAS/NGAP/SBI control-plane events
     APP = "app"                  # application-layer / edge events
+    SENSING = "sensing"          # ISAC: joint sensing & communication (range/velocity/angle, detections)
     UNKNOWN = "unknown"
 
     @classmethod

@@ -20,6 +20,17 @@ DEFAULT_RATIOS = {
     "general": 0.25,
 }
 
+# Multi-use-case mixture (v2.5): synth-uc dominates so one generalist adapter learns the
+# diagnose→correlate loop across all 6G use-case packs; real trajectories are scarce (kept at a
+# small ratio so all are used, not diluted). See docs/SIX_G_USE_CASES.md §5.2.
+SIXG_RATIOS = {
+    "synth-uc": 0.45,
+    "general": 0.25,
+    "synth-intent": 0.15,
+    "synth-diagnosis": 0.12,
+    "trajectory": 0.03,
+}
+
 
 @dataclass
 class MixtureReport:

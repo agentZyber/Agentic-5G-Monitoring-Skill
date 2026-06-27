@@ -37,9 +37,9 @@ class ContaminationGuard:
     @classmethod
     def default(cls, teleqna_path: Optional[str | Path] = None) -> "ContaminationGuard":
         """Bench-scenario asks always; TeleQnA questions too when the local file exists."""
-        from zortenet.bench.teleagent import builtin_scenarios
+        from zortenet.bench.teleagent import builtin_scenarios, sixg_scenarios
 
-        forbidden: List[str] = [s.ask for s in builtin_scenarios()]
+        forbidden: List[str] = [s.ask for s in builtin_scenarios()] + [s.ask for s in sixg_scenarios()]
         path = Path(teleqna_path) if teleqna_path else Path("datasets/TeleQnA.txt")
         if path.exists():
             try:
@@ -60,11 +60,25 @@ class ContaminationGuard:
         return any(f in blob for f in self.forbidden)
 
 
+def looks_non_english(text: str, threshold: float = 0.15) -> bool:
+    """True if a meaningful fraction of letters are non-Latin (Thai, CJK, Cyrillic, …).
+
+    Catches teacher language-drift (e.g. a model answering in Thai despite an English prompt) —
+    a real failure mode seen in live capture that contamination/outcome filters don't flag.
+    """
+    letters = [c for c in (text or "") if c.isalpha()]
+    if not letters:
+        return False
+    non_ascii = sum(1 for c in letters if ord(c) > 127)
+    return non_ascii / len(letters) > threshold
+
+
 @dataclass
 class CurationConfig:
     require_outcome_success: bool = False  # strict mode: only judge-stamped successes
     drop_stopped_early: bool = True
     drop_tool_errors: bool = True
+    require_english: bool = False          # drop trajectories whose answer drifted off-language
     guard: Optional[ContaminationGuard] = None
 
 
@@ -117,6 +131,8 @@ def _drop_reason(record: Dict[str, Any], config: CurationConfig) -> Optional[str
         return "outcome-not-stamped"  # strict mode: heuristic acceptance is off
     if config.guard and config.guard.is_contaminated(record):
         return "contaminated"
+    if config.require_english and looks_non_english(record.get("answer", "")):
+        return "non-english"
     return None
 
 

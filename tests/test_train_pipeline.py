@@ -166,6 +166,22 @@ def test_curation_filters_count_every_drop(tmp_path):
     assert kept[0]["meta"]["source"] == "trajectory"
 
 
+def test_language_filter_drops_off_language(tmp_path):
+    from zortenet.train.curate import looks_non_english
+
+    assert looks_non_english("จากการวิเคราะห์ UE-154 พบว่ามีเหตุการณ์") is True  # Thai drift
+    assert looks_non_english("UE-154 has CQI 15 and SNR 32 dB; healthy.") is False
+
+    rec = _traj()
+    rec["answer"] = "สรุปสถานะเครือข่ายขณะนี้"  # Thai answer
+    path = tmp_path / "t.jsonl"
+    path.write_text(json.dumps(rec))
+    _, lenient = curate_trajectories(path)
+    assert lenient.kept == 1  # default keeps it (language not checked)
+    _, strict = curate_trajectories(path, CurationConfig(require_english=True))
+    assert strict.kept == 0 and strict.dropped["non-english"] == 1
+
+
 def test_strict_mode_requires_judge_stamp(tmp_path):
     path = tmp_path / "t.jsonl"
     path.write_text(json.dumps(_traj(outcome=None)) + "\n")

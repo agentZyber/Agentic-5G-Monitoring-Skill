@@ -56,6 +56,14 @@ def test_load_packs_merges_without_collisions():
         "ran-opt-copilot",
         "multi-agent-noc",
         "amarisoft",
+        "energy-agent",
+        "xr-qoe",
+        "massive-iot",
+        "v2x-ops",
+        "ntn-ops",
+        "ai-native",
+        "sensing-ops",
+        "uav-ops",
     ]
 
 

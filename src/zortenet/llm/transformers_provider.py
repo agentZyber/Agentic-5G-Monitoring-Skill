@@ -59,12 +59,16 @@ class TransformersProvider(LLMProvider):
         load_in_4bit: bool = True,
         max_new_tokens: int = 512,
         temperature: float = 0.0,
+        enable_thinking: bool = False,
     ) -> None:
         self.model_id = model
         self.adapter = adapter
         self.load_in_4bit = load_in_4bit
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
+        # Qwen3 etc. default to emitting <think>…</think>; off keeps outputs tool-call-focused and
+        # matches our training data (which has direct tool calls). Harmless for non-thinking models.
+        self.enable_thinking = enable_thinking
         self.model = model + (f"+adapter({adapter})" if adapter else "")  # display label
         self._tok = None
         self._model = None
@@ -112,24 +116,30 @@ class TransformersProvider(LLMProvider):
         self._ensure_loaded()
         tool_schemas = [t.to_openai() for t in tools] if tools else None
         norm = normalize_tool_calls(messages)
+
+        def _encode(use_tools: bool):
+            kw = dict(
+                add_generation_prompt=True, return_tensors="pt", return_dict=True,
+                tokenize=True, enable_thinking=self.enable_thinking,
+            )
+            if use_tools:
+                kw["tools"] = tool_schemas
+            return self._tok.apply_chat_template(norm, **kw)
+
         try:
-            inputs = self._tok.apply_chat_template(
-                norm, tools=tool_schemas, add_generation_prompt=True,
-                return_tensors="pt", tokenize=True,
-            )
+            enc = _encode(bool(tool_schemas))
         except Exception:
-            # fallback: render without the tools kwarg (some templates choke on tool history)
-            inputs = self._tok.apply_chat_template(
-                norm, add_generation_prompt=True, return_tensors="pt", tokenize=True,
-            )
-        inputs = inputs.to(self._model.device)
+            # fallback: some templates choke on tool history — render without the tools kwarg
+            enc = _encode(False)
+        enc = {k: v.to(self._model.device) for k, v in enc.items()}
+        input_len = enc["input_ids"].shape[1]
         with torch.no_grad():
             generated = self._model.generate(
-                inputs, max_new_tokens=self.max_new_tokens,
+                **enc, max_new_tokens=self.max_new_tokens,
                 do_sample=self.temperature > 0,
                 temperature=self.temperature if self.temperature > 0 else None,
                 pad_token_id=self._tok.eos_token_id,
             )
-        text = self._tok.decode(generated[0][inputs.shape[1]:], skip_special_tokens=True)
+        text = self._tok.decode(generated[0][input_len:], skip_special_tokens=True)
         content, tool_calls = parse_tool_calls(text)
         return LLMResponse(content=content, tool_calls=tool_calls, model=self.model)
