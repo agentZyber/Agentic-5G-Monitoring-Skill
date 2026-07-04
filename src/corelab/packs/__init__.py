@@ -27,6 +27,7 @@ PACK_MODULES: Dict[str, str] = {
     "ran-opt-copilot": "corelab.packs.ran_opt_copilot",
     "multi-agent-noc": "corelab.multiagent.noc",
     "amarisoft": "corelab.packs.amarisoft",  # opt-in (needs a live callbox); enable via CORELAB_PACKS
+    "bpf-hunt": "corelab.packs.bpf_hunt",    # opt-in (needs a host sensor); live eBPF-backdoor detection
     # 6G use-case operations packs (ITU-R IMT-2030 scenarios + overarching aspects). Opt-in: each
     # exposes the same overview/assess/correlate/recommend shape over its domain (read-only;
     # actuation routes through intent-to-network). Enable via CORELAB_PACKS or the "6g" selector.

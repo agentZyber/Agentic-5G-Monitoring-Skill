@@ -56,6 +56,7 @@ def test_load_packs_merges_without_collisions():
         "ran-opt-copilot",
         "multi-agent-noc",
         "amarisoft",
+        "bpf-hunt",
         "energy-agent",
         "xr-qoe",
         "massive-iot",

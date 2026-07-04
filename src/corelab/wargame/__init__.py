@@ -12,8 +12,11 @@ from corelab.wargame.arsenal import build_blue_registry, build_red_registry
 from corelab.wargame.benchmark import blue_configs, leaderboard, run_matchups, scripted_reds
 from corelab.wargame.controllers import AgentController, ReactiveController, ScriptedController
 from corelab.wargame.engine import WarGameResult, run_wargame
+from corelab.wargame.integrations import (AdaptiveRedController, ExternalBenchController,
+                                          HashChainAudit)
 from corelab.wargame.judge import Check, TurnRecord, WarGameScore, judge_wargame
 from corelab.wargame.report import dashboard_html, result_markdown
+from corelab.wargame.rf import RF_SCENARIO_ID, rf_episode, rf_scenario_meta
 from corelab.wargame.showcase import showcase_html
 from corelab.wargame.scenario import (SCENARIOS, Action, WarGameScenario, WorldState,
                                        get_scenario, seed_world)
@@ -25,4 +28,6 @@ __all__ = [
     "build_red_registry", "build_blue_registry",
     "scripted_reds", "blue_configs", "run_matchups", "leaderboard",
     "dashboard_html", "result_markdown", "showcase_html",
+    "ExternalBenchController", "AdaptiveRedController", "HashChainAudit",
+    "rf_episode", "rf_scenario_meta", "RF_SCENARIO_ID",
 ]

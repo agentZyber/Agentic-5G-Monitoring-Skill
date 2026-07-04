@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><title>War-game evidence — logistics-under-disruption</title>
+<style>
+:root{--bg:#0e1420;--card:#161f2e;--ink:#e6edf6;--mut:#8aa0bd;--ok:#37d67a;--bad:#ff5c6c;--line:#243349;--accent:#5aa9ff}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px} h1{font-size:20px;margin:0 0 4px} .sub{color:var(--mut);margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px} .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600} .ok{color:var(--ok)} .bad{color:var(--bad)} .big{font-size:15px}
+.badge{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:99px;color:var(--mut);font-size:12px;margin-right:6px}
+.verdict{font-size:16px;font-weight:700}
+</style></head><body><div class="wrap">
+<h1>Red/Blue War-Game — Evidence Pack</h1>
+<div class="sub">Contested logistics network — coordination under disruption</div>
+<div style="margin-bottom:16px">
+  <span class="badge">sovereign · scripted</span>
+  <span class="badge">human-in-the-loop</span>
+  <span class="badge">non-kinetic simulation</span>
+  <span class="badge">reproducible</span>
+</div>
+<div class="grid">
+  <div class="card"><h2>Defender leaderboard (vs 3 adversary profiles)</h2>
+    <table><tr><th>#</th><th>defender</th><th>win rate</th><th>availability</th><th>t-to-detect</th></tr><tr><td>1</td><td>blue:reactive-heuristic</td><td>100%</td><td>61%</td><td>0.0</td></tr><tr><td>2</td><td>blue:passive</td><td>0%</td><td>0%</td><td>—</td></tr></table></div>
+  <div class="card"><h2>Featured run · red:persistent vs blue:reactive-heuristic</h2>
+    <div class="verdict">✅ mission held</div>
+    <div class="big" style="color:var(--mut);margin-top:6px">availability 50% · detect 0 turn(s) · neutralised 3/3 · unauthorized 0</div>
+  </div>
+</div>
+<div class="card" style="margin-top:16px"><h2>Turn-by-turn timeline</h2>
+  <table><tr><th>turn</th><th>red move</th><th>blue move</th><th>mission</th></tr><tr><td>1</td><td>jam_link(element=link-1) [applied]</td><td>detect_threats() [applied]</td><td class='bad'>DEGRADED</td></tr><tr><td>2</td><td>jam_link(element=link-1) [applied]</td><td>apply_countermeasure(threat_id=T1, measure=reroute) [applied]</td><td class='bad'>DEGRADED</td></tr><tr><td>3</td><td>jam_link(element=link-1) [applied]</td><td>apply_countermeasure(threat_id=T2, measure=reroute) [applied]</td><td class='bad'>DEGRADED</td></tr><tr><td>4</td><td>—</td><td>apply_countermeasure(threat_id=T3, measure=reroute) [applied]</td><td class='ok'>healthy</td></tr><tr><td>5</td><td>—</td><td>detect_threats() [applied]</td><td class='ok'>healthy</td></tr><tr><td>6</td><td>—</td><td>detect_threats() [applied]</td><td class='ok'>healthy</td></tr></table></div>
+<div class="card" style="margin-top:16px"><h2>Human-control (doctrine) decision log</h2>
+  <table><tr><th>decision</th><th>action</th><th>authority</th></tr><tr><td class='ok'>APPROVED</td><td>apply_countermeasure({&#x27;threat_id&#x27;: &#x27;T1&#x27;, &#x27;measure&#x27;: &#x27;reroute&#x27;})</td><td>doctrine-authority(simulated-human)</td></tr><tr><td class='ok'>APPROVED</td><td>apply_countermeasure({&#x27;threat_id&#x27;: &#x27;T2&#x27;, &#x27;measure&#x27;: &#x27;reroute&#x27;})</td><td>doctrine-authority(simulated-human)</td></tr><tr><td class='ok'>APPROVED</td><td>apply_countermeasure({&#x27;threat_id&#x27;: &#x27;T3&#x27;, &#x27;measure&#x27;: &#x27;reroute&#x27;})</td><td>doctrine-authority(simulated-human)</td></tr></table>
+  <div style="color:var(--mut);margin-top:8px;font-size:12px">Every consequential action is gated on human approval and logged — the AI proposes, a human disposes.</div></div>
+<div class="sub" style="margin-top:16px;font-size:12px">Provenance: judged programmatically (state-based), seeded &amp; reproducible, runs fully on local models (air-gappable). A logistics coordination network (convoy C2, supply tracking) must stay available and trustworthy while the adversary jams comms, floods signaling, and spoofs tracking feeds. Blue detects the live disruption and applies an approved reroute/authentication countermeasure to keep coordination up. Simulation + decision-support, human-in-the-loop.</div>
+</div></body></html>

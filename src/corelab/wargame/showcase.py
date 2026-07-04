@@ -35,9 +35,9 @@ def _default_index(results: List[Dict[str, Any]]) -> int:
     return 0
 
 
-def showcase_html(scenario: Dict[str, Any], results: List[Dict[str, Any]]) -> str:
+def showcase_html(scenarios: Dict[str, Any], results: List[Dict[str, Any]]) -> str:
     payload = json.dumps({
-        "scenario": scenario, "results": results,
+        "scenarios": scenarios, "results": results,
         "board": _leaderboard(results), "default": _default_index(results),
     }, default=str)
     return _TEMPLATE.replace("__PAYLOAD__", payload)
@@ -82,6 +82,8 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opa
 select{font-family:var(--mono);background:#0a1220;color:var(--ink);border:1px solid var(--line2);border-radius:8px;
  padding:7px 11px;font-size:12px;outline:none}
 select:focus{border-color:var(--cy)}
+#play{font-family:var(--mono);background:#0a1220;color:var(--cy);border:1px solid var(--line2);border-radius:8px;padding:7px 15px;font-size:12px;cursor:pointer;letter-spacing:.06em}
+#play:hover{border-color:var(--cy);box-shadow:0 0 10px rgba(58,208,216,.25)}
 .scrub{display:flex;align-items:center;gap:9px;flex:1;min-width:210px;font-family:var(--mono);font-size:11px;color:var(--mut)}
 .scrub input{flex:1;accent-color:var(--cy)}
 .verdict{font-family:var(--mono);font-weight:700;letter-spacing:.04em;font-size:15px}
@@ -122,6 +124,7 @@ tr.deg td:last-child{color:#ffb9c0}
  <div class="ctl">
   <select id="run"></select>
   <div class="scrub"><span>TURN</span><input id="turn" type="range" min="1" value="1"><span id="turnlbl" class="mono cy"></span></div>
+  <button id="play">▶ PLAY</button>
  </div>
 
  <div class="grid">
@@ -169,14 +172,13 @@ tr.deg td:last-child{color:#ffb9c0}
 <script>
 const D=__PAYLOAD__, R=D.results;
 const $=s=>document.querySelector(s), esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-$('#scn').textContent=' · '+D.scenario.title;
-$('#foot').textContent='Provenance: state-based programmatic judge · seeded & reproducible · sovereign local models (air-gappable) · '+R.length+' matchups';
+$('#foot').textContent='Provenance: state-based programmatic judge · seeded & reproducible · sovereign local models (air-gappable) · '+Object.keys(D.scenarios).length+' scenarios · '+R.length+' matchups';
 // leaderboard (static)
 $('#lbn').textContent=D.board.length+' defenders';
 $('#lb').innerHTML=D.board.map(b=>{const w=Math.round(b.win_rate*100);
  return `<div class="row"><div class="nm">${esc(b.blue)}</div><div class="track"><div class="fill" style="width:${w}%"></div></div><div class="pct">${w}%</div></div>`;}).join('');
 // run selector
-$('#run').innerHTML=R.map((r,i)=>`<option value="${i}">${esc(r.red)}  ✦  ${esc(r.blue)}  —  ${r.score.success?'HELD':'lost'}</option>`).join('');
+$('#run').innerHTML=R.map((r,i)=>`<option value="${i}">${esc(r.scenario_id)} · ${esc(r.red)} ✦ ${esc(r.blue)} — ${r.score.success?'HELD':'lost'}</option>`).join('');
 $('#run').value=D.default;
 
 function threatsOf(run){ // ordered unique threat ids + injection turn
@@ -184,7 +186,24 @@ function threatsOf(run){ // ordered unique threat ids + injection turn
  run.timeline.forEach(t=>(t.injected||[]).forEach(id=>{if(!(id in seen)){seen[id]=t.turn;order.push(id);}}));
  return {order,inj:seen};
 }
+function drawRadio(run,turn){
+ const r=run.timeline[turn-1]?run.timeline[turn-1].radio:null; if(!r) return;
+ const cx=200,cy=150,R0=120,n=r.ues.length,cqiCol=c=>c>=13?'#35d69f':c>=8?'#ffb020':'#ff4d5e',powered=r.cell_power_db>=0;
+ let s=`<defs><filter id="g"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+ const pos=r.ues.map((u,k)=>{const a=(-Math.PI/2)+(k-(n-1)/2)*0.75;return{x:cx+Math.cos(a)*R0,y:cy+Math.sin(a)*R0,u};});
+ pos.forEach(p=>{const col=cqiCol(p.u.cqi),deg=p.u.cqi<12;s+=`<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="${col}" stroke-width="${deg?1.9:1.2}" opacity="${deg?.9:.5}"/>`;});
+ s+=`<circle cx="${cx}" cy="${cy}" r="30" fill="#0a1626" stroke="${powered?'#3ad0d8':'#ff4d5e'}" stroke-width="2" filter="url(#g)"/>`;
+ s+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${powered?'#8fe9ec':'#ff8f99'}">CELL-1</text>`;
+ s+=`<text x="${cx}" y="${cy+10}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="${powered?'#5f7690':'#ff8f99'}">${powered?'nominal':r.cell_power_db+' dB'}</text>`;
+ pos.forEach(p=>{const col=cqiCol(p.u.cqi),deg=p.u.cqi<12;
+  s+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="17" fill="#0e1524" stroke="${col}" stroke-width="1.9" ${deg?'filter=\"url(#g)\"':''}/>`;
+  s+=`<text x="${p.x.toFixed(1)}" y="${(p.y-2).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" fill="${col}">UE${p.u.id}</text>`;
+  s+=`<text x="${p.x.toFixed(1)}" y="${(p.y+9).toFixed(1)}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="${col}">CQI ${p.u.cqi}</text>`;});
+ $('#bs').innerHTML=s;
+ $('#bsstat').textContent=`cell power ${powered?'0':r.cell_power_db} dB · min CQI ${Math.min(...r.ues.map(u=>u.cqi))}`;
+}
 function drawBS(run,turn){
+ if(run.timeline[turn-1]&&run.timeline[turn-1].radio){ drawRadio(run,turn); return; }
  const {order,inj}=threatsOf(run), active=new Set(run.timeline[turn-1]?run.timeline[turn-1].active_threats.filter(Boolean):[]);
  const W=520,H=300,cx=200,cy=150, defx=430,defy=150;
  let s=`<defs><filter id="g"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
@@ -198,7 +217,7 @@ function drawBS(run,turn){
  const deg=[...active].length>0;
  s+=`<circle cx="${cx}" cy="${cy}" r="30" fill="#0a1626" stroke="${deg?'#ff4d5e':'#3ad0d8'}" stroke-width="2" filter="url(#g)"/>`;
  s+=`<text x="${cx}" y="${cy-2}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="${deg?'#ff8f99':'#8fe9ec'}">MISSION</text>`;
- s+=`<text x="${cx}" y="${cy+11}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#5f7690">${esc(D.scenario.mission_asset)}</text>`;
+ s+=`<text x="${cx}" y="${cy+11}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8.5" fill="#5f7690">${esc((D.scenarios[run.scenario_id]||{}).mission_asset)}</text>`;
  // threat nodes
  order.forEach((id,k)=>{const a=(-Math.PI/2)+(k-(order.length-1)/2)*0.62, R0=118, x=cx+Math.cos(a)*R0, y=cy+Math.sin(a)*R0;
   const injd=inj[id]<=turn, act=active.has(id), col=!injd?'#3f5169':act?'#ff4d5e':'#35d69f';
@@ -212,6 +231,7 @@ function drawBS(run,turn){
 }
 function render(){
  const run=R[+$('#run').value], s=run.score, N=run.timeline.length;
+ $('#scn').textContent=' · '+((D.scenarios[run.scenario_id]||{}).title||run.scenario_id);
  const turnEl=$('#turn'); turnEl.max=N; let turn=Math.min(+turnEl.value,N); turnEl.value=turn;
  $('#turnlbl').textContent=turn+' / '+N;
  $('#verdict').innerHTML=(s.success?'<span class="held">&#10004; MISSION HELD</span>':'<span class="lost">&#10008; MISSION LOST</span>')+` <span class="mut" style="font-size:12px">· ${esc(run.red)} vs ${esc(run.blue)}</span>`;
@@ -226,7 +246,16 @@ function render(){
  $('#ap').innerHTML=ap.length?ap.map(e=>`<tr><td><span class="tag ${e.approved?'ap':'dn'}">${e.approved?'APPROVED':'DENIED'}</span></td><td class="mono">${esc(e.action)}(${esc(JSON.stringify(e.args))})</td><td class="mono mut">${esc(e.approver||e.reason)}</td></tr>`).join(''):'<tr><td colspan=3 class="mut">no consequential actions requested</td></tr>';
  drawBS(run,turn);
 }
-$('#run').addEventListener('change',()=>{$('#turn').value=R[+$('#run').value].timeline.length;render();});
-$('#turn').addEventListener('input',render);
+let timer=null;
+function stopPlay(){ if(timer){clearInterval(timer);timer=null;$('#play').textContent='▶ PLAY';} }
+$('#play').addEventListener('click',()=>{
+ if(timer){stopPlay();return;}
+ const t=$('#turn'); if(+t.value>=+t.max){t.value=1;}      // replay from the top
+ $('#play').textContent='⏸ PAUSE';
+ timer=setInterval(()=>{const t=$('#turn'); if(+t.value>=+t.max){stopPlay();return;} t.value=+t.value+1; render();},850);
+ render();
+});
+$('#run').addEventListener('change',()=>{stopPlay();$('#turn').value=R[+$('#run').value].timeline.length;render();});
+$('#turn').addEventListener('input',()=>{stopPlay();render();});
 $('#run').value=D.default; $('#turn').value=R[D.default].timeline.length; render();
 </script></body></html>"""

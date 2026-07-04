@@ -58,12 +58,22 @@ baselines.
 - **Sovereign & auditable:** local models, seeded reproducibility, state‑based judging, full provenance.
 - **Non‑kinetic:** the world is simulated telemetry; the PoC is decision‑support and training, never targeting.
 
-## P4 — NCSRD asset integration hooks (the consortium story)
-The engine is deliberately pluggable so NCSRD's proven assets drop in:
-1. **Real red/blue bench** — NCSRD's hardware‑in‑the‑loop SCA red/blue agents implement the same `Controller` interface → a *real* adversarial arena becomes one scenario in the benchmark DB.
-2. **Context Agility Manager (CAM)** — CAM's sense→compare→adapt loop drives **adaptive threat escalation** (Red difficulty responds to Blue's performance) and adaptive defences.
-3. **PQC‑secured agent mesh** — the toolkit's MCP/A2A transports hardened with NCSRD's Kyber/Dilithium; the Besu quantum‑resistant **DLT** provides a tamper‑evident audit trail for the approval log.
+## P4 — NCSRD asset integration hooks (implemented — `corelab.wargame.integrations`)
+The three drop‑in points for NCSRD's proven assets are now real, tested interfaces:
+1. **Real red/blue bench → `ExternalBenchController`** — wraps NCSRD's hardware‑in‑the‑loop SCA
+   red/blue bench (subprocess / REST / in‑proc) as a war‑game `Controller`; the engine's guardrails
+   still sandbox it. A *real* adversarial arena becomes one player in the benchmark DB.
+2. **Context Agility Manager → `AdaptiveRedController`** — CAM's sense→compare→adapt loop as an
+   adversary: escalates when the defender copes, holds when it hurts. Try it live:
+   `python training/wargame_guided.py --adaptive`.
+3. **PQC/DLT audit → `HashChainAudit`** — a tamper‑evident, hash‑chained audit trail of the doctrine
+   decisions (`verify()` breaks on tampering) — the local stand‑in for NCSRD's Besu quantum‑resistant
+   DLT + PQC signing of the approval log.
 
 ## Status
-TRL 4–5 (working, tested, reproducible; runs on the local sovereign stack). Tests: `tests/test_wargame.py`
-(scoring, doctrine gate, guardrails, leaderboard, evidence artefacts) — part of the toolkit's green suite.
+TRL 4–5 (working, tested, reproducible; runs on the local sovereign stack). Tests:
+`tests/test_wargame.py` + `tests/test_wargame_integrations.py` (scoring, doctrine gate, guardrails,
+leaderboard, evidence artefacts, and all three P4 hooks) — part of the toolkit's green suite (270 tests).
+The console (`training/wargame_dashboard.py`) adds a **▶ playback** that auto‑advances turns and
+animates the battlespace; the guided demo (`training/wargame_guided.py`) covers all scenarios with
+`--auto` / `--live-approval` / `--adaptive` flags.

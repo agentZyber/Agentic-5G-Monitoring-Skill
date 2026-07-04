@@ -1,24 +1,31 @@
 #!/usr/bin/env python
-"""Flagship war-game demo — run the red/blue adversarial simulation and write the audit evidence pack.
+"""Flagship war-game demo — run the adversarial simulation and write the audit evidence pack.
 
 Plays every adversary profile against the defender configs (passive floor, fixed-script heuristic,
-and — when a sovereign local model is reachable — an LLM agent), ranks them on a leaderboard, and
-emits dashboard.html + run_report.md + results.json. Runs offline; the agent uses a local Ollama
-model (sovereign, air-gappable). Non-kinetic simulation + decision-support only.
+and — when a sovereign local model is reachable — an LLM agent), across one or all scenarios, ranks
+them on a leaderboard, and emits dashboard.html + run_report.md + results.json. Runs offline; the
+agent uses a local Ollama model (sovereign, air-gappable). Non-kinetic simulation + decision-support.
 
-    OLLAMA_MODEL=qwen2.5:14b python training/wargame_demo.py
+    WARGAME_SCENARIO=all OLLAMA_MODEL=qwen2.5:14b python training/wargame_demo.py
 """
 import json
 import os
 from pathlib import Path
 
-from corelab.wargame import (blue_configs, dashboard_html, get_scenario, leaderboard,
-                              result_markdown, run_matchups, scripted_reds)
+from corelab.wargame import (RF_SCENARIO_ID, SCENARIOS, blue_configs, dashboard_html, get_scenario,
+                             leaderboard, result_markdown, rf_episode, run_matchups, scripted_reds)
 
 OUT = Path(os.getenv("WARGAME_OUT", "wargame_evidence"))
 OUT.mkdir(exist_ok=True)
-sc = get_scenario(os.getenv("WARGAME_SCENARIO", "contested-tactical-network"))
-print(f"[demo] scenario: {sc.title}")
+which = os.getenv("WARGAME_SCENARIO", "contested-tactical-network")
+if which == "all":
+    scen_ids = list(SCENARIOS)
+elif which in ("rf", RF_SCENARIO_ID):
+    scen_ids = []                                # RF is a standalone episode, not a matchup grid
+else:
+    scen_ids = [which]
+want_rf = which in ("all", "rf", RF_SCENARIO_ID)
+print(f"[demo] scenarios: {scen_ids}{' + rf' if want_rf else ''}")
 
 provider = None
 try:
@@ -33,16 +40,26 @@ try:
 except Exception as exc:
     print(f"[demo] no LLM provider ({exc}) — scripted baselines only")
 
-results = run_matchups(sc, scripted_reds(sc), blue_configs(sc, provider))
+results = []
+for sid in scen_ids:
+    sc = get_scenario(sid)
+    print(f"[demo]  running {sid} ...")
+    results += run_matchups(sc, scripted_reds(sc), blue_configs(sc, provider))
+
+if want_rf:                                       # the RF red/blue episode (real-data-seeded, visualised)
+    results.append(rf_episode())
+    print(f"[demo]  added RF episode: {RF_SCENARIO_ID}")
+
 board = leaderboard(results)
-print("\n[demo] DEFENDER LEADERBOARD (vs adversary profiles):")
+print("\n[demo] DEFENDER LEADERBOARD (across all scenarios × adversary profiles):")
 for r in board:
     print(f"   {r['blue']:26} win={r['win_rate']:.0%} availability={r['mean_availability']:.0%} "
           f"t-to-detect={r['mean_time_to_detect']}")
 
 featured = next((r for r in results if "agent" in r.blue), results[-1])
 (OUT / "dashboard.html").write_text(
-    dashboard_html(sc, results, board, featured, model=(provider.model if provider else "scripted")))
+    dashboard_html(get_scenario(featured.scenario_id), results, board, featured,
+                   model=(provider.model if provider else "scripted")))
 (OUT / "run_report.md").write_text(result_markdown(featured))
 (OUT / "results.json").write_text(json.dumps([r.to_dict() for r in results], indent=2, default=str))
 print(f"\n[demo] evidence pack -> {OUT}/  (dashboard.html, run_report.md, results.json)")

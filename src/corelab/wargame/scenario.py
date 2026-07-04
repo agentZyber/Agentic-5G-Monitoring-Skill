@@ -152,8 +152,33 @@ def _isr_tasking_scenario() -> WarGameScenario:
     )
 
 
+def _logistics_scenario() -> WarGameScenario:
+    return WarGameScenario(
+        scenario_id="logistics-under-disruption",
+        title="Contested logistics network — coordination under disruption",
+        description=(
+            "A logistics coordination network (convoy C2, supply tracking) must stay available and "
+            "trustworthy while the adversary jams comms, floods signaling, and spoofs tracking feeds. "
+            "Blue detects the live disruption and applies an approved reroute/authentication "
+            "countermeasure to keep coordination up. Simulation + decision-support, human-in-the-loop."
+        ),
+        mission_asset="logistics-net",
+        max_turns=6,
+        detect_deadline=2,
+        red_actions=["jam_link", "signaling_flood", "spoof_feed"],
+        blue_actions=["detect_threats", "diagnose_threat", "apply_countermeasure"],
+        seed_events=[
+            {"domain": EventDomain.SLICE, "entity_id": "logistics-net", "event_type": "SLA_OK",
+             "payload": {"sla": "nominal", "service": "convoy-C2+tracking", "target": "logistics-net"}},
+        ],
+        red_budget=5,
+        blue_budget=10,
+    )
+
+
 SCENARIOS: Dict[str, WarGameScenario] = {
-    s.scenario_id: s for s in (_tactical_network_scenario(), _isr_tasking_scenario())
+    s.scenario_id: s for s in (_tactical_network_scenario(), _isr_tasking_scenario(),
+                               _logistics_scenario())
 }
 
 

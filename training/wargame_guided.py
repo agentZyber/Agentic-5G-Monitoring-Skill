@@ -11,8 +11,8 @@ pausing between steps, then prints the verdict + scorecard, and a campaign summa
 """
 import sys
 
-from corelab.wargame import (SCENARIOS, ApprovalPolicy, ReactiveController, get_scenario,
-                             run_wargame)
+from corelab.wargame import (SCENARIOS, AdaptiveRedController, ApprovalPolicy, ReactiveController,
+                             get_scenario, run_wargame)
 from corelab.wargame.benchmark import scripted_reds
 
 C = {"r": "\033[0m", "b": "\033[1m", "dim": "\033[2m", "cy": "\033[36m", "rd": "\033[31m",
@@ -22,6 +22,7 @@ def c(s, col): return f"{C[col]}{s}{C['r']}"
 ARGS = sys.argv[1:]
 INTERACTIVE = "--auto" not in ARGS
 LIVE_APPROVAL = "--live-approval" in ARGS
+ADAPTIVE = "--adaptive" in ARGS          # CAM-style adversary that escalates when the defender copes
 
 
 def pause(msg="   ↵ Enter to advance"):
@@ -76,7 +77,8 @@ def run_one(sc):
     pause("   ↵ Enter to begin the engagement")
     approval = (ApprovalPolicy(callback=live_approval_cb) if LIVE_APPROVAL
                 else ApprovalPolicy(mode="auto-approve"))
-    red = scripted_reds(sc)["multi-vector"]()          # multi-threat adversary → shows the full loop
+    red = (AdaptiveRedController(sc.red_actions, name="red:cam-adaptive") if ADAPTIVE
+           else scripted_reds(sc)["multi-vector"]())   # CAM adaptive vs fixed multi-threat adversary
     blue = ReactiveController(name="blue:doctrine-defender")
     res = run_wargame(sc, red, blue, approval, observer=lambda t, rec, w: observer(t, rec, w, sc))
     s = res.score

@@ -1,8 +1,9 @@
 """wargame: deterministic (scripted) end-to-end — scoring, doctrine gate, guardrails, leaderboard."""
 
-from corelab.wargame import (Action, ApprovalPolicy, ReactiveController, ScriptedController,
-                              blue_configs, dashboard_html, get_scenario, leaderboard,
-                              result_markdown, run_matchups, run_wargame, scripted_reds)
+from corelab.wargame import (SCENARIOS, Action, ApprovalPolicy, ReactiveController,
+                              ScriptedController, blue_configs, dashboard_html, get_scenario,
+                              leaderboard, result_markdown, run_matchups, run_wargame,
+                              scripted_reds, showcase_html)
 
 
 def test_approved_countermeasure_restores_mission():
@@ -59,6 +60,29 @@ def test_reactive_handles_multi_vector_red():
     res = run_wargame(sc, red, ReactiveController(), ApprovalPolicy(mode="auto-approve"))
     assert res.score.threats_injected == 3 and res.score.threats_neutralised == 3
     assert res.score.success is True
+
+
+def test_all_builtin_scenarios_playable():
+    """Every built-in scenario (incl. logistics) is winnable by the doctrine defender, gate held."""
+    assert set(SCENARIOS) >= {"contested-tactical-network", "isr-sensor-contested",
+                              "logistics-under-disruption"}
+    for sid in SCENARIOS:
+        sc = get_scenario(sid)
+        res = run_wargame(sc, scripted_reds(sc)["multi-vector"](), ReactiveController(),
+                          ApprovalPolicy(mode="auto-approve"))
+        assert res.score.success and res.score.unauthorized_applies == 0, sid
+
+
+def test_showcase_multi_scenario_renders():
+    results = []
+    for sid in SCENARIOS:
+        sc = get_scenario(sid)
+        results += [r.to_dict() for r in run_matchups(sc, scripted_reds(sc), blue_configs(sc))]
+    scenarios = {sid: get_scenario(sid).to_dict() for sid in SCENARIOS}
+    html = showcase_html(scenarios, results)
+    assert html.startswith("<!doctype html>") and "__PAYLOAD__" not in html
+    for sid in SCENARIOS:
+        assert sid in html  # every scenario is selectable in the console
 
 
 def test_observer_hook_fires_each_turn():
