@@ -1,8 +1,8 @@
 """sensing-ops pack: detection-quality-vs-comms-load correlation over seeded events + graceful empty store."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.packs.sensing_ops import PACK, build_registry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.packs.sensing_ops import PACK, build_registry
 
 
 def _store():

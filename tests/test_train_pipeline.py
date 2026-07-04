@@ -5,26 +5,26 @@ import json
 
 import pytest
 
-from zortenet.agent.trajectory import TrajectoryLogger
-from zortenet.bench.teleagent import builtin_scenarios, run_teleagent_bench
-from zortenet.intent.models import Expectation, NetworkIntent, validate_intent
-from zortenet.llm.base import LLMProvider, LLMResponse
-from zortenet.memory.knowledge_base import KnowledgeBase
-from zortenet.packs.self_heal import PLAYBOOKS
-from zortenet.packs.telco_bench.data import load_teleqna_dict
-from zortenet.train.card import generate_model_card
-from zortenet.train.configs import G0_SHORTLIST, PRESETS, build_config
-from zortenet.train.curate import (
+from corelab.agent.trajectory import TrajectoryLogger
+from corelab.bench.teleagent import builtin_scenarios, run_teleagent_bench
+from corelab.intent.models import Expectation, NetworkIntent, validate_intent
+from corelab.llm.base import LLMProvider, LLMResponse
+from corelab.memory.knowledge_base import KnowledgeBase
+from corelab.packs.self_heal import PLAYBOOKS
+from corelab.packs.telco_bench.data import load_teleqna_dict
+from corelab.train.card import generate_model_card
+from corelab.train.configs import G0_SHORTLIST, PRESETS, build_config
+from corelab.train.curate import (
     ContaminationGuard,
     CurationConfig,
     curate_trajectories,
     split_train_val,
     write_jsonl,
 )
-from zortenet.train.g0 import RAGWrappedProvider, run_g0
-from zortenet.train.gates import GateError, TrainingGates
-from zortenet.train.mixture import assemble_mixture
-from zortenet.train.synth import synth_diagnosis_pairs, synth_intent_pairs
+from corelab.train.g0 import RAGWrappedProvider, run_g0
+from corelab.train.gates import GateError, TrainingGates
+from corelab.train.mixture import assemble_mixture
+from corelab.train.synth import synth_diagnosis_pairs, synth_intent_pairs
 
 
 class CannedProvider(LLMProvider):
@@ -87,7 +87,7 @@ def test_g0_matrix_and_gap_decision(tmp_path):
 
 
 def test_g0_no_gap_stops_the_pipeline():
-    from zortenet.train.g0 import G0Report, G0Row
+    from corelab.train.g0 import G0Report, G0Row
 
     report = G0Report(target_success=0.8)
     report.rows.append(G0Row("strong", rag=True, telco_accuracy=0.9,
@@ -167,7 +167,7 @@ def test_curation_filters_count_every_drop(tmp_path):
 
 
 def test_language_filter_drops_off_language(tmp_path):
-    from zortenet.train.curate import looks_non_english
+    from corelab.train.curate import looks_non_english
 
     assert looks_non_english("จากการวิเคราะห์ UE-154 พบว่ามีเหตุการณ์") is True  # Thai drift
     assert looks_non_english("UE-154 has CQI 15 and SNR 32 dB; healthy.") is False
@@ -237,7 +237,7 @@ def test_synth_intents_all_validate_and_reproduce():
 
 
 def test_synth_correlation_trajectories_close_the_g0_gap():
-    from zortenet.train.synth import synth_correlation_trajectories
+    from corelab.train.synth import synth_correlation_trajectories
 
     trajs = synth_correlation_trajectories(8, seed=1)
     assert len(trajs) == 8
@@ -317,7 +317,7 @@ def test_gates_enforce_order_and_persist(tmp_path):
 
 
 def test_failed_gate_blocks():
-    gates = TrainingGates(path="/tmp/nonexistent-dir-zortenet/never-written.json")
+    gates = TrainingGates(path="/tmp/nonexistent-dir-corelab/never-written.json")
     gates.state = {"G0": {"passed": False}}
     with pytest.raises(GateError):
         gates.require("G1")

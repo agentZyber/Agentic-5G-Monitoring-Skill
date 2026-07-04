@@ -2,7 +2,7 @@
 
 import pytest
 
-from zortenet.bench.registry import (
+from corelab.bench.registry import (
     AXES,
     RECOMMENDED_SUITE,
     REGISTRY,

@@ -1,4 +1,4 @@
-# Light dependency set for the agentic toolkit (src/zortenet/) — no PyTorch/Chroma tax.
+# Light dependency set for the agentic toolkit (src/corelab/) — no PyTorch/Chroma tax.
 # The legacy NetApp's full set lives in requirements.txt.
 
 # runtime

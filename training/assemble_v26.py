@@ -9,10 +9,10 @@ epochs). Writes ds_v26/{train,val}.jsonl + sft_config_v26.json.
 import json
 from pathlib import Path
 
-from zortenet.train.configs import build_config
-from zortenet.train.curate import split_train_val, write_jsonl
-from zortenet.train.mixture import SIXG_RATIOS, assemble_mixture
-from zortenet.train.synth import (synth_diagnosis_pairs, synth_intent_pairs,
+from corelab.train.configs import build_config
+from corelab.train.curate import split_train_val, write_jsonl
+from corelab.train.mixture import SIXG_RATIOS, assemble_mixture
+from corelab.train.synth import (synth_diagnosis_pairs, synth_intent_pairs,
                                    synth_uc_bench_trajectories)
 
 OUT = Path("ds_v26")

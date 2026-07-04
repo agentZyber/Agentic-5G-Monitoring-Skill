@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""QLoRA SFT runner — fine-tunes a base model on the messages-format dataset per a zortenet config.
+"""QLoRA SFT runner — fine-tunes a base model on the messages-format dataset per a corelab config.
 
 Runs on the GPU host (needs torch / transformers / peft / trl / bitsandbytes / datasets).
-Reads training/sft_config.json (emitted by `zortenet.train config`) and train/val JSONL whose
+Reads training/sft_config.json (emitted by `corelab.train config`) and train/val JSONL whose
 records are ``{"messages": [...]}``. Each example is rendered to text via the tokenizer's chat
 template (tool-calls normalized to the HF ``type:function`` shape), with a manual fallback so a
 template quirk never aborts the run.

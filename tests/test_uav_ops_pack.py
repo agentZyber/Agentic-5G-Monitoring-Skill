@@ -1,8 +1,8 @@
 """uav-ops pack: aerial UE-vs-cell interference correlation over seeded events + graceful empty store."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.packs.uav_ops import PACK, build_registry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.packs.uav_ops import PACK, build_registry
 
 
 def _store():

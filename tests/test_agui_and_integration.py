@@ -9,11 +9,11 @@ import json
 
 from fastapi.testclient import TestClient
 
-from zortenet.agent.runtime import AgentResult
-from zortenet.app import create_app
-from zortenet.core.events import EventDomain, NetworkEvent, Severity
-from zortenet.interop.agui import agui_events
-from zortenet.llm.base import LLMProvider, LLMResponse
+from corelab.agent.runtime import AgentResult
+from corelab.app import create_app
+from corelab.core.events import EventDomain, NetworkEvent, Severity
+from corelab.interop.agui import agui_events
+from corelab.llm.base import LLMProvider, LLMResponse
 
 
 class ScriptedProvider(LLMProvider):

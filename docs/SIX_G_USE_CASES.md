@@ -1,6 +1,6 @@
 # 6G Use-Case Coverage & Multi-UC Training Plan
 
-*How ZorteNet's agentic toolkit maps onto the full ITU-R IMT-2030 (6G) use-case space, the tooling
+*How CORE Lab NCSRD's agentic toolkit maps onto the full ITU-R IMT-2030 (6G) use-case space, the tooling
 that delivers it, and the plan to train one generalist agent that operates across all of it.*
 
 Status: tooling for all IMT-2030 scenarios is **built and tested** (this iteration); the multi-UC
@@ -13,7 +13,7 @@ model is **planned with the data generator implemented** (`synth_uc_trajectories
 The deep-research pass found the *vertical* 6G use cases — XR, V2X, UAV, digital twins, eHealth —
 are **saturated** with EU SNS JU pilots (DESIRE6G, IMAGINE-B5G, FIDAL, 6G-SANDBOX). What is *not*
 served is the **agentic operations layer** for them: the agent that diagnoses, correlates, and
-recommends across the network serving each use case. So ZorteNet does not re-build the verticals —
+recommends across the network serving each use case. So CORE Lab NCSRD does not re-build the verticals —
 it provides one **agentic-ops pack per use case** that teaches the *same* reusable loop:
 
 > **`overview → assess → correlate → recommend`** — observe the domain, assess an entity, correlate
@@ -43,7 +43,7 @@ Every one now maps to at least one pack (✅ new this iteration, ▫️ pre-exis
 | *Cross-cutting ops* | ▫️ netops-copilot, intent-to-network, spec-kb, amarisoft | — |
 
 **17 loadable packs total** (9 prior + 8 new). Load the 6G family with
-`load_packs(["6g"])` / `ZORTENET_PACKS=6g`, or individually.
+`load_packs(["6g"])` / `CORELAB_PACKS=6g`, or individually.
 
 ## 3. The 8 new use-case packs
 
@@ -61,7 +61,7 @@ transferable loop). All have unit tests; the full suite is green (253 tests).
 | `sensing-ops` | sensing + throughput | ISAC detection SNR vs comms load → comms contention vs target/clutter |
 | `uav-ops` | ran_kpi + location | aerial interference / handover thrash → UE-specific vs cell-wide LoS interference |
 
-Template/exemplar: `src/zortenet/packs/energy_agent/`. New event domain: `EventDomain.SENSING`.
+Template/exemplar: `src/corelab/packs/energy_agent/`. New event domain: `EventDomain.SENSING`.
 
 ## 4. The shared agentic behavior (why one adapter suffices)
 
@@ -74,7 +74,7 @@ decision of the training plan.
 ## 5. Multi-UC training plan
 
 ### 5.1 Data sources (per UC)
-1. **Synthetic (bulk, machine-validated)** — `zortenet.train.synth.synth_uc_trajectories()`
+1. **Synthetic (bulk, machine-validated)** — `corelab.train.synth.synth_uc_trajectories()`
    *(implemented)*: seeds a real EventStore with one degraded entity among peers, runs each pack's
    **real** `assess_*` + `correlate_*` tools, emits an outcome-grounded trajectory. One call →
    training data for all 8 UCs. Scales to hundreds/UC, reproducible by seed.
@@ -83,7 +83,7 @@ decision of the training plan.
    `training/batch_capture.py` (hardened-English, log-only-clean). Anchors realism + serves as
    held-out eval signal.
 3. **Dataset replay** — 5G3E / TelecomTS KPI time-series replayed through the bridge to seed
-   realistic per-UC events (`zortenet.datasets`).
+   realistic per-UC events (`corelab.datasets`).
 
 ### 5.2 Mixture (extends `DEFAULT_RATIOS`)
 Proposed v2.5 weights (add a `synth-uc` bucket; keep general data to prevent forgetting):
@@ -150,6 +150,6 @@ ai-native, sensing). All 4 failures share one learnable pattern: the base **skip
 entity, but omits the diagnostic assessment). The gap is real and specific — exactly the
 assess→correlate chaining the `synth_uc_trajectories` data demonstrates. **Training justified.**
 
-**Immediate next step (Phase C):** `python -m zortenet.train synth --uc-per 120` + curate real live
-captures + `python -m zortenet.train mixture --multi-uc` (marks G1), then Phase D is the v2.5 QLoRA
+**Immediate next step (Phase C):** `python -m corelab.train synth --uc-per 120` + curate real live
+captures + `python -m corelab.train mixture --multi-uc` (marks G1), then Phase D is the v2.5 QLoRA
 retrain that tests whether one adapter closes the correlation gap **across all 6G use cases at once**.

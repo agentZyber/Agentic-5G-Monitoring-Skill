@@ -1,7 +1,7 @@
-# ZorteNet — The Agentic 5G/6G Toolkit
+# CORE Lab NCSRD — The Agentic 5G/6G Toolkit
 
 <p align="center">
-  <img src="assets/zortenet-icon.png" alt="ZorteNet icon" width="144">
+  <img src="assets/corelab-icon.png" alt="CORE Lab NCSRD icon" width="144">
 </p>
 
 > **Clone it, `make testbed-up`, and talk to your 5G network — locally, no API keys.**
@@ -88,12 +88,12 @@ make run              # uvicorn on :5000  → http://localhost:5000/docs
 
 ```
 agent clients ─ MCP · A2A · REST ─┐
-  interop  (zortenet.interop)      │  one capability core, many protocol faces
-  packs    (zortenet.packs)        │  turnkey {tools+prompt+datasets+connectors}
-  agent    (zortenet.agent)        │  LangGraph runtime + shared ToolRegistry
-  llm      (zortenet.llm)          │  Ollama ▸ OpenAI ▸ Anthropic ▸ vLLM
-  memory   (zortenet.memory)       │  Chroma RAG over events + knowledge base
-  core     (zortenet.core)         │  NetworkEvent (typed) + bus
+  interop  (corelab.interop)      │  one capability core, many protocol faces
+  packs    (corelab.packs)        │  turnkey {tools+prompt+datasets+connectors}
+  agent    (corelab.agent)        │  LangGraph runtime + shared ToolRegistry
+  llm      (corelab.llm)          │  Ollama ▸ OpenAI ▸ Anthropic ▸ vLLM
+  memory   (corelab.memory)       │  Chroma RAG over events + knowledge base
+  core     (corelab.core)         │  NetworkEvent (typed) + bus
   connectors                       │  NEF/Open5GS/free5GC · O-RAN E2 · Prometheus · UERANSIM
   testbed/                          Open5GS + UERANSIM + Ollama + Prometheus
 ```
@@ -103,17 +103,17 @@ matrix (§5), the capability-pack catalog (§4), datasets (§7), and the impleme
 
 ## Repository layout
 
-- `src/zortenet/` — the toolkit: `core/`, `llm/`, `agent/`, `interop/`, `packs/`, `datasets/`
-- `src/` (top level) — the legacy ZorteNet NetApp (FastAPI app, 5G-core adapters)
+- `src/corelab/` — the toolkit: `core/`, `llm/`, `agent/`, `interop/`, `packs/`, `datasets/`
+- `src/` (top level) — the legacy CORE Lab NCSRD NetApp (FastAPI app, 5G-core adapters)
 - `testbed/` — local Open5GS+UERANSIM+Ollama testbed (compose, configs, README)
 - `docs/` — [design blueprint](docs/AGENTIC_TOOLKIT_BLUEPRINT.md) · [implementation plan](docs/IMPLEMENTATION_PLAN.md) (Stages 0–5) · [infrastructure tiers](docs/INFRASTRUCTURE.md) · [model pipeline](docs/MODEL_PIPELINE.md)
 - `testing_netapp/` — legacy NetApp tests · `tests/` — new toolkit tests
 
 ---
 
-## Legacy ZorteNet NetApp (the `location-monitor` capability)
+## Legacy CORE Lab NCSRD NetApp (the `location-monitor` capability)
 
-The original ZorteNet is a FastAPI 5G Network Application that consumes 5G core location callbacks,
+The original CORE Lab NCSRD is a FastAPI 5G Network Application that consumes 5G core location callbacks,
 applies UE policy checks, streams events in real time, and exposes agent-friendly context and RAG
 endpoints. It remains fully functional and is becoming the `location-monitor` capability pack.
 
@@ -134,5 +134,5 @@ toolkit suite `make test-toolkit` (28 passed).
 ## CI & License
 
 GitHub Actions CI runs the legacy suite on Python 3.11 (`.github/workflows/ci.yml`).
-ZorteNet is licensed under the [Apache License 2.0](LICENSE); see [`NOTICE`](NOTICE) for
+CORE Lab NCSRD is licensed under the [Apache License 2.0](LICENSE); see [`NOTICE`](NOTICE) for
 third-party attributions (all permissive: Apache-2.0 / MIT / BSD-3-Clause).

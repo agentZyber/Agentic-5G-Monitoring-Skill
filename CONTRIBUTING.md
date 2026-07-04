@@ -1,4 +1,4 @@
-# Contributing to ZorteNet — The Agentic 5G/6G Toolkit
+# Contributing to CORE Lab NCSRD — The Agentic 5G/6G Toolkit
 
 The two highest-leverage contributions are **capability packs** and **connectors** — both are
 small, self-contained, and scaffolded for you.
@@ -6,9 +6,9 @@ small, self-contained, and scaffolded for you.
 ## Add a capability pack (the 30-minute path)
 
 ```bash
-PYTHONPATH=src python -m zortenet.packs.new my-pack --description "What it does"
-# → creates src/zortenet/packs/my_pack/__init__.py + tests/test_my_pack.py
-# → register the printed line in PACK_MODULES (src/zortenet/packs/__init__.py)
+PYTHONPATH=src python -m corelab.packs.new my-pack --description "What it does"
+# → creates src/corelab/packs/my_pack/__init__.py + tests/test_my_pack.py
+# → register the printed line in PACK_MODULES (src/corelab/packs/__init__.py)
 make test-toolkit
 ```
 
@@ -27,7 +27,7 @@ make test-toolkit
 
 ## Add a connector
 
-Follow `src/zortenet/connectors/` patterns: a thin client with an **injectable transport/session**
+Follow `src/corelab/connectors/` patterns: a thin client with an **injectable transport/session**
 (fully mock-testable), `is_available()` that never raises, reads returning `None`/empty on
 failure. Add a `ConnectorInfo` entry to the catalog in `connectors/base.py` with an honest
 `status` (`implemented` | `stub` | `live-pending`).

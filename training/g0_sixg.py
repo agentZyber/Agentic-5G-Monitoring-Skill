@@ -8,9 +8,9 @@ correlate_* tool) = the per-UC agentic gap exists and justifies training. Saves 
 import json
 import os
 
-from zortenet.bench.teleagent import SIXG_SCENARIO_PACKS, run_teleagent_bench, sixg_scenarios
-from zortenet.llm.ollama import OllamaProvider
-from zortenet.packs import DEFAULT_PACKS
+from corelab.bench.teleagent import SIXG_SCENARIO_PACKS, run_teleagent_bench, sixg_scenarios
+from corelab.llm.ollama import OllamaProvider
+from corelab.packs import DEFAULT_PACKS
 
 MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 prov = OllamaProvider(model=MODEL, host=os.getenv("OLLAMA_HOST", "http://localhost:11434"),

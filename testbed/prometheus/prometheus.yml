@@ -7,11 +7,11 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # The ZorteNet toolkit. (A /metrics endpoint is a near-term TODO — until then this target is
+  # The CORE Lab NCSRD toolkit. (A /metrics endpoint is a near-term TODO — until then this target is
   # expected to be DOWN; it is wired so the dashboard works the moment instrumentation lands.)
-  - job_name: zortenet
+  - job_name: corelab
     static_configs:
-      - targets: ["zortenet:5000"]
+      - targets: ["corelab:5000"]
 
   # Open5GS NFs expose Prometheus metrics (default :9091) when the metrics module is enabled in
   # amf.yaml / smf.yaml / upf.yaml. Adjust the host if Open5GS runs in a different compose/host.

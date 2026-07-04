@@ -2,7 +2,7 @@
 # The intent lifecycle: agent drafts/submits — a HUMAN approves — only then does apply work.
 # Uses the A2A skill face for the agent-side steps so no LLM is needed for this walkthrough.
 set -euo pipefail
-BASE="${ZORTENET_URL:-http://localhost:5001}"
+BASE="${CORELAB_URL:-http://localhost:5001}"
 
 echo "== 1) draft (agent-side) =="
 DRAFT=$(curl -s -X POST "$BASE/a2a/skills/draft_intent" -H 'Content-Type: application/json' -d '{

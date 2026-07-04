@@ -1,4 +1,4 @@
-# ZorteNet Local Testbed
+# CORE Lab NCSRD Local Testbed
 
 A **fully local, no-cloud, no-API-key** 5G testbed for the agentic toolkit. Three tiers:
 
@@ -27,7 +27,7 @@ A **fully local, no-cloud, no-API-key** 5G testbed for the agentic toolkit. Thre
    │   UERANSIM UE (traffic)               │                                │
    │                                       ▼                                │
    │   ┌──────────────── agentic overlay (this compose) ───────────────┐   │
-   │   │  ZorteNet toolkit  ◀── tools/MCP/A2A ──▶  agents/clients        │   │
+   │   │  CORE Lab NCSRD toolkit  ◀── tools/MCP/A2A ──▶  agents/clients        │   │
    │   │      │  reasons with                                            │   │
    │   │      ▼                                                          │   │
    │   │   Ollama (local LLM)        Prometheus ──▶ Grafana (optional)   │   │
@@ -56,12 +56,12 @@ Provision at least one subscriber (IMSI/Ki/OPc) in the Open5GS WebUI (`http://lo
 matching your UERANSIM `ue.yaml`, then start the gNB and UE. Confirm the UE gets a PDU session.
 
 > Make the core reachable from the overlay: either run it on the same Docker network as this
-> compose (`zortenet-net`) or rely on the default `host.docker.internal` wiring (Docker Desktop).
+> compose (`corelab-net`) or rely on the default `host.docker.internal` wiring (Docker Desktop).
 
 ### 2. Bring up the agentic overlay (this compose)
 
 ```bash
-make testbed-up                 # ollama + zortenet toolkit + prometheus
+make testbed-up                 # ollama + corelab toolkit + prometheus
 make testbed-models             # pull the default Ollama model (llama3.1:8b)
 make testbed-up PROFILE=dashboards   # also start Grafana (optional)
 ```
@@ -85,7 +85,7 @@ Set via environment (see `docker-compose.yml`):
 |---|---|---|
 | `OLLAMA_MODEL` | `llama3.1:8b` | local model to pull/use |
 | `CORE_TYPE` | `open5gs` | which core adapter the toolkit drives |
-| `OPEN5GS_BASE_URL` | `http://host.docker.internal:29508` | Open5GS SBI/NEF reachable from the toolkit. **Default fits the host-published topology (Docker Desktop).** If you instead attach Open5GS to `zortenet-net` (the shared-network option above), set this to the core's container/service name, e.g. `http://open5gs-amf:7777` — `host.docker.internal` will *not* reach a sibling container. |
+| `OPEN5GS_BASE_URL` | `http://host.docker.internal:29508` | Open5GS SBI/NEF reachable from the toolkit. **Default fits the host-published topology (Docker Desktop).** If you instead attach Open5GS to `corelab-net` (the shared-network option above), set this to the core's container/service name, e.g. `http://open5gs-amf:7777` — `host.docker.internal` will *not* reach a sibling container. |
 
 ## Tier 2 — real RF / O-RAN (opt-in, advanced)
 
@@ -107,7 +107,7 @@ For labs with an **Amarisoft callbox** and **Ettus B2xx** SDRs (real COTS phones
   `amarisoft` connector reads stats/UE lists and executes **approval-gated** control
   (`config_set`, handover, channel-sim fault injection). Install the optional transport dep:
   `pip install websockets`.
-- **Executor selection:** `ZORTENET_EXECUTOR=amarisoft` switches intent application from the
+- **Executor selection:** `CORELAB_EXECUTOR=amarisoft` switches intent application from the
   default `SimulatedExecutor` to real Amarisoft `config_set` calls — approved intents then change
   the real network. Leave unset for simulated (the honest default).
 - **RF discipline:** prefer a **conducted/shielded** setup (cabled RF or a shield box) — OTA 5G
@@ -116,7 +116,7 @@ For labs with an **Amarisoft callbox** and **Ettus B2xx** SDRs (real COTS phones
 - **vLLM for quality:** serve a large model on the GPU host
   (`vllm serve <model> --tensor-parallel-size 4`, plus `--enable-auto-tool-choice` and the
   model-matching `--tool-call-parser` for tool calling) and point the toolkit at it:
-  `ZORTENET_LLM=vllm VLLM_BASE_URL=http://<gpu-host>:8000`.
+  `CORELAB_LLM=vllm VLLM_BASE_URL=http://<gpu-host>:8000`.
 
 > **Validation status:** the Amarisoft/A1 connectors are mock-tested against the documented API
 > shapes; the catalog marks both **live-pending** until they're exercised against the real
@@ -132,7 +132,7 @@ deploy the same overlay (Ollama + toolkit + Prometheus) alongside them for CI / 
 
 - **Toolkit can't reach Open5GS** → two supported topologies: (a) **host-published** (Docker
   Desktop) keep the `host.docker.internal` default; (b) **shared network** — attach Open5GS to
-  `zortenet-net` and set `OPEN5GS_BASE_URL` to the core's container/service name (e.g.
+  `corelab-net` and set `OPEN5GS_BASE_URL` to the core's container/service name (e.g.
   `http://open5gs-amf:7777`). `host.docker.internal` does *not* reach a sibling container, and on
   Linux without Docker Desktop the core must be host-published on a reachable interface.
 - **Ollama slow / OOM** → pull a smaller model: `make testbed-models OLLAMA_MODEL=qwen2.5:7b`.

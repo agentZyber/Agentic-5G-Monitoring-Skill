@@ -1,4 +1,4 @@
-# ZorteNet → The Agentic 5G/6G Toolkit — Design Blueprint
+# CORE Lab NCSRD → The Agentic 5G/6G Toolkit — Design Blueprint
 
 > **Status:** v1.1 (2026-06-06). Grounded in two adversarially-verified deep-research passes,
 > **both complete and cited below** (pass #1: use cases / frameworks / datasets / testbeds —
@@ -15,12 +15,12 @@
 
 ## 0. How to read this document
 
-This blueprint evolves the existing **ZorteNet** NetApp (a single-purpose 5G *location/mobility*
+This blueprint evolves the existing **CORE Lab NCSRD** NetApp (a single-purpose 5G *location/mobility*
 monitor) into a **general, multi-domain agentic 5G/6G framework** — the "go-to foundation" an SNS
 JU / 5G-PPP project can `git clone` and build on. It is the design that the runnable scaffold
 (next milestone) implements. Decisions already locked with the maintainer:
 
-- **Evolve in place** (this repo), not greenfield — ZorteNet's monitoring becomes *one capability pack among many*.
+- **Evolve in place** (this repo), not greenfield — CORE Lab NCSRD's monitoring becomes *one capability pack among many*.
 - Deliver a **blueprint + runnable scaffold**: MCP/A2A/ACP servers, an Ollama LLM layer, an Open5GS+UERANSIM+Ollama local testbed, use-case capability packs, and a dataset registry.
 
 ---
@@ -74,9 +74,9 @@ catchy GitHub story and the honest "look how narrow the realm is" statement.
 agent-native, multi-protocol, locally-runnable autonomous network — clone, `make up`, talk to your
 network.*
 
-**Naming (maintainer's call):** keep **ZorteNet** as the umbrella brand (existing history, license,
-recognition) and position the framework layer. Candidate framework names: **ZorteNet Agentic
-Toolkit**, **Z5G**, **AgentRAN**, **NetAgent**, **5GENT**. Recommendation: keep `ZorteNet` brand +
+**Naming (maintainer's call):** keep **CORE Lab NCSRD** as the umbrella brand (existing history, license,
+recognition) and position the framework layer. Candidate framework names: **CORE Lab NCSRD Agentic
+Toolkit**, **Z5G**, **AgentRAN**, **NetAgent**, **5GENT**. Recommendation: keep `CORE Lab NCSRD` brand +
 tagline *"The Agentic 5G/6G Toolkit."*
 
 **Differentiators (the star magnets):**
@@ -89,9 +89,9 @@ tagline *"The Agentic 5G/6G Toolkit."*
 
 ---
 
-## 3. Architecture — evolving ZorteNet
+## 3. Architecture — evolving CORE Lab NCSRD
 
-Today ZorteNet is a single vertical slice (location → context → React-agent). The evolution keeps
+Today CORE Lab NCSRD is a single vertical slice (location → context → React-agent). The evolution keeps
 its proven loop (subscribe → callback → normalize → context/RAG → stream → agent) but
 **generalizes every axis** it currently hard-codes (see the 6 narrowness axes recorded in memory).
 
@@ -101,19 +101,19 @@ its proven loop (subscribe → callback → normalize → context/RAG → stream
    (north-bound)          └──────────────────────────────────────────────────────────────┘
                                  │ MCP  │ A2A  │ ACP  │ AG-UI │ REST/OpenAPI │ gRPC │ A1
    ┌───────────────────────────────────────────────────────────────────────────────────────┐
-   │  INTEROP LAYER (zortenet.interop)   — pluggable protocol servers, one core, many faces   │
+   │  INTEROP LAYER (corelab.interop)   — pluggable protocol servers, one core, many faces   │
    ├───────────────────────────────────────────────────────────────────────────────────────┤
-   │  CAPABILITY PACKS (zortenet.packs)  — turnkey {tools + prompts + datasets + eval} bundles │
+   │  CAPABILITY PACKS (corelab.packs)  — turnkey {tools + prompts + datasets + eval} bundles │
    │   netops-copilot · intent-to-network · self-heal · energy · security-sentinel · ran-opt  │
-   │   location-monitor (the legacy ZorteNet pack) · multi-agent-noc                          │
+   │   location-monitor (the legacy CORE Lab NCSRD pack) · multi-agent-noc                          │
    ├───────────────────────────────────────────────────────────────────────────────────────┤
-   │  AGENT RUNTIME (zortenet.agent)     — LangGraph today; runtime-agnostic tool registry     │
-   │  LLM PROVIDERS (zortenet.llm)       — Ollama (local) ▸ OpenAI ▸ Anthropic ▸ vLLM          │
-   │  MEMORY / RAG (zortenet.memory)     — Chroma over events + knowledge base (specs/datasets) │
+   │  AGENT RUNTIME (corelab.agent)     — LangGraph today; runtime-agnostic tool registry     │
+   │  LLM PROVIDERS (corelab.llm)       — Ollama (local) ▸ OpenAI ▸ Anthropic ▸ vLLM          │
+   │  MEMORY / RAG (corelab.memory)     — Chroma over events + knowledge base (specs/datasets) │
    ├───────────────────────────────────────────────────────────────────────────────────────┤
-   │  EVENT MODEL + BUS (zortenet.core)  — NetworkEvent (typed) · normalization · pub/sub       │
+   │  EVENT MODEL + BUS (corelab.core)  — NetworkEvent (typed) · normalization · pub/sub       │
    ├───────────────────────────────────────────────────────────────────────────────────────┤
-   │  CONNECTORS (zortenet.connectors)   — south-bound adapters (generalize FiveGCoreAdapter)   │
+   │  CONNECTORS (corelab.connectors)   — south-bound adapters (generalize FiveGCoreAdapter)   │
    │   5GC: NEF/CAPIF · Open5GS · free5GC · OAI   |  RAN/O-RAN: E2/KPM via OSC RIC, xApp/rApp    │
    │   Telemetry: Prometheus · NWDAF analytics · PCF policy   |  Sim: UERANSIM control           │
    └───────────────────────────────────────────────────────────────────────────────────────┘
@@ -126,7 +126,7 @@ its proven loop (subscribe → callback → normalize → context/RAG → stream
 
 ### 3.1 The four generalizations (what actually changes in code)
 
-1. **`LocationEvent` → `NetworkEvent`** (`zortenet.core.events`): a typed event with a
+1. **`LocationEvent` → `NetworkEvent`** (`corelab.core.events`): a typed event with a
    `domain` discriminator (`location | qos | throughput | slice | energy | security | ran_kpi |
    signaling | app`) and a `payload`. `LocationEvent` becomes one subtype. The RAG textualizer
    (`vector_store._event_to_text`) becomes per-domain pluggable so semantic search works for *any*
@@ -138,7 +138,7 @@ its proven loop (subscribe → callback → normalize → context/RAG → stream
 3. **`FiveGCoreAdapter` → `Connector` registry.** Keep the elegant `FiveGCoreFactory` pattern;
    broaden it: a `Connector` may be read-only (telemetry), or read-write (control: A1 policy,
    xApp action, slice config). This is what turns monitoring into *agentic action*.
-4. **Cloud-only LLM → provider abstraction with Ollama default.** A `zortenet.llm` package wraps
+4. **Cloud-only LLM → provider abstraction with Ollama default.** A `corelab.llm` package wraps
    Ollama / OpenAI / Anthropic / vLLM behind one interface; the agent runtime is told which
    provider to use. Default = Ollama (no keys → it just runs).
 
@@ -160,10 +160,10 @@ saturated verticals.
 | **`netops-copilot`** ⭐ | NL Q&A + diagnosis over the live network ("why is UE-3 dropping?", "show slice B load") with RAG over telemetry + 3GPP specs | "Talk to your 5G network." The flagship demo. Agentic O&M is the underserved gap (medium-confidence inference; see §1.2) | Open5GS, Prometheus, NWDAF |
 | **`intent-to-network`** ⭐ | NL intent → validated config/slice change (TMF921 / 3GPP TS 28.312 / O-RAN A1 policy), with dry-run + human approval | LLM-driven intent-based networking, standards-bridged | PCF, O-RAN A1, UERANSIM |
 | **`self-heal`** | Observe anomaly → diagnose (LLM+RAG) → propose/apply remediation, human-in-the-loop | Agentic self-healing vs. classical RL (contrast REAL/PPO) | all telemetry + control |
-| **`security-sentinel`** | Signaling/behavioral anomaly + agentic triage; **evolves ZorteNet's geofence/policy** | Natural home for the legacy code; security agents are under-served | Open5GS, location, signaling |
+| **`security-sentinel`** | Signaling/behavioral anomaly + agentic triage; **evolves CORE Lab NCSRD's geofence/policy** | Natural home for the legacy code; security agents are under-served | Open5GS, location, signaling |
 | **`ran-opt-copilot`** | LLM *supervises* a near-RT xApp closed loop over E2/KPM (orchestrates RL rather than replacing it) | Bridges the REAL-style RL world and LLM agents | OSC RIC + srsRAN E2 |
 | **`energy-agent`** | Closes the loop on energy KPIs agentically | Energy is a *saturated topic done non-agentically* — we make it agentic | Prometheus, PCF |
-| **`location-monitor`** | The current ZorteNet capability, repackaged | Backward-compat; one pack among many | NEF/Open5GS/free5GC |
+| **`location-monitor`** | The current CORE Lab NCSRD capability, repackaged | Backward-compat; one pack among many | NEF/Open5GS/free5GC |
 | **`multi-agent-noc`** | RAN-agent + core-agent + security-agent coordinating via **A2A** | Showcases agent interop; "a NOC of agents" | all |
 | **`telco-bench`** | Run TeleQnA against your local Ollama model; report score | "Benchmark your local model on telecom," instant shareable artifact | none (offline) |
 
@@ -175,8 +175,8 @@ to generate events and shows the agent reacting — the "wow in 60 seconds" for 
 ## 5. Agentic interop interfaces (ask #7: "MCP, ACP, etc. — propose more")
 
 The design principle: **one capability core, many protocol faces.** Each protocol is a thin server
-in `zortenet.interop` that exposes the *same* registered tools/resources. This is the headline
-feature and the strongest differentiator vs. ZorteNet's current REST-only function schemas.
+in `corelab.interop` that exposes the *same* registered tools/resources. This is the headline
+feature and the strongest differentiator vs. CORE Lab NCSRD's current REST-only function schemas.
 
 ### 5.1 General agent protocols (verified, research pass #2 — recency-flagged to mid-2026)
 
@@ -198,7 +198,7 @@ feature and the strongest differentiator vs. ZorteNet's current REST-only functi
 
 | Standard | What we bridge | How an agent uses it |
 |---|---|---|
-| **3GPP NEF / CAPIF** | already in ZorteNet (evolved5g SDK) | subscribe to monitoring events |
+| **3GPP NEF / CAPIF** | already in CORE Lab NCSRD (evolved5g SDK) | subscribe to monitoring events |
 | **3GPP intent-driven mgmt — TS 28.312** (verified **v18.8.0, Rel-18**) | IDMS = a Management Service (MnS) in the Service-Based Management Architecture (SBMA); intent lifecycle create/modify/query/activate | `intent-to-network` agent acts as an **IDMS consumer** submitting intents to a 3GPP MnS producer |
 | **TM Forum TMF921 / TMF921A** + **Autonomous Networks L0–L5** | TMF921 Intent Management API (v5.0.0, re-released Jan 2026) + the RDF **Intent Ontology (TIO)**; the L0–L5 autonomy ladder | LLM translates NL goals → **TIO-validated Turtle/JSON-LD intent** via TMF921; packs are positioned on L0–L5 |
 | **O-RAN — WG1 SMO Intent TR v5.0**, **R1 AI/ML model APIs**, A1/O1/E2 | RAN management via intents; R1 model deploy/retrieve (App Protocols v8.00); A1 policy, E2/KPM | `ran-opt-copilot` authors A1 policies / supervises xApps; uses R1 to deploy/retrieve models |
@@ -238,8 +238,8 @@ feature and the strongest differentiator vs. ZorteNet's current REST-only functi
 
 ## 7. Datasets (ask #2 + #3)
 
-A `zortenet.datasets` **registry**: declarative entries `{name, source, license, loader, role}` with
-`zortenet datasets pull <name>`. Roles: **RAG** (ingest into the knowledge base), **eval**
+A `corelab.datasets` **registry**: declarative entries `{name, source, license, loader, role}` with
+`corelab datasets pull <name>`. Roles: **RAG** (ingest into the knowledge base), **eval**
 (benchmark the agent/model), **replay** (feed the testbed event bus to simulate live traffic).
 
 | Dataset | Size / form | Role | Status |
@@ -276,8 +276,8 @@ docker compose:
   ueransim-gnb    # simulated gNB
   ueransim-ue     # one or more simulated UEs (traffic generators)
   ollama          # local LLM serving (model pulled on first run)
-  zortenet         # the toolkit (FastAPI + interop servers + agent)
-  prometheus       # scrape Open5GS + zortenet metrics
+  corelab         # the toolkit (FastAPI + interop servers + agent)
+  prometheus       # scrape Open5GS + corelab metrics
   grafana          # dashboards (optional profile)
 ```
 No SDR, no hardware, no cloud, no API keys. `make up` → `make demo PACK=netops-copilot`.
@@ -306,7 +306,7 @@ so the same testbed runs on a K8s cluster for CI and multi-node experiments.
 
 **Milestone 0 — Foundation (the runnable scaffold, next):**
 - New package layout (§10); generalize `LocationEvent → NetworkEvent`; `Connector` registry; keep tests green.
-- `zortenet.llm` with **Ollama** default; wire into the agent runtime.
+- `corelab.llm` with **Ollama** default; wire into the agent runtime.
 - **Tier-1 testbed** compose (Open5GS+UERANSIM+Ollama+toolkit+Prometheus) — brought up & smoke-tested.
 - **MCP server** exposing the existing tools (fastest credible "agent-native" win).
 - `location-monitor` pack = today's behavior, repackaged. Dataset registry + `telco-bench` (TeleQnA).
@@ -326,7 +326,7 @@ Each milestone is independently demoable and star-worthy; M0+M1 alone make a com
 ## 10. Proposed repo structure (evolve in place)
 
 ```
-src/zortenet/
+src/corelab/
   core/        events.py (NetworkEvent), bus.py, normalize.py
   connectors/  base.py (Connector), open5gs.py, free5gc.py, nef.py, oran_e2.py, prometheus.py, nwdaf.py, ueransim.py
   memory/      vector_store.py (generalized), knowledge_base.py
@@ -341,7 +341,7 @@ testbed/       docker-compose.yml, profiles/ (oran, grafana), ollama/, open5gs/,
 docs/          BLUEPRINT.md (this), architecture/, packs/, interop/, testbed/
 examples/      notebooks + curl/MCP/A2A client snippets
 ```
-The current `src/*.py` files migrate under `src/zortenet/` with shims so existing imports/tests keep
+The current `src/*.py` files migrate under `src/corelab/` with shims so existing imports/tests keep
 passing during the refactor.
 
 ---

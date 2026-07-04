@@ -10,8 +10,8 @@ import json
 
 import torch
 
-from zortenet.bench.teleagent import run_teleagent_bench
-from zortenet.llm.transformers_provider import TransformersProvider
+from corelab.bench.teleagent import run_teleagent_bench
+from corelab.llm.transformers_provider import TransformersProvider
 
 BASE = "Qwen/Qwen3-8B"
 ADAPTER = "/home/localadmin/zt/output"

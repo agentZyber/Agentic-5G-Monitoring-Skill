@@ -1,6 +1,6 @@
 # Model Pipeline — Fine-Tuning a Telecom *Agent* Model
 
-> **Status:** design doc, now **implemented as scaffolding** in `src/zortenet/train/`
+> **Status:** design doc, now **implemented as scaffolding** in `src/corelab/train/`
 > (Stage 5 of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)): G0 baseline harness, curation +
 > contamination guard, machine-validated synth generators, mixture assembly, the enforced G0→G3
 > gate ledger, config presets, and the hedged model-card generator — all tested. The GPU runs
@@ -86,9 +86,9 @@ Reference: 4 × 24 GB (96 GB total). All numbers are engineering estimates, not 
 | **Serving for data-gen/eval** | ✅ | 70B 4-bit ≈ 2 cards tensor-parallel (vLLM), leaving 2 cards for training — teacher and student can run concurrently |
 
 - **Tooling:** any of TRL / Axolotl / torchtune / Unsloth; DPO via TRL. Keep configs in `training/`
-  in-repo so the run is reproducible (`zortenet train` CLI is the M3 design intent — capture →
+  in-repo so the run is reproducible (`corelab train` CLI is the M3 design intent — capture →
   curate → tune → eval as one loop).
-- **Base model — chosen by G0's bake-off, not asserted** (`zortenet.train.configs.G0_SHORTLIST`).
+- **Base model — chosen by G0's bake-off, not asserted** (`corelab.train.configs.G0_SHORTLIST`).
   The framework's demand on the base is overwhelmingly **tool calling + structured output +
   multi-step**, so the shortlist is Apache-2.0 strong tool-callers (clean adapter redistribution):
 
@@ -157,7 +157,7 @@ cloud-frontier models on your network's operations — running on one GPU.*
 | `telco-bench` baselines | score table for local models | **Stage 1** (full G0 base-vs-RAG matrix re-run in Stage 5) |
 | TeleAgentBench v0 | held-out scenario suite + programmatic judges | **Stage 4** (must exist before training can be measured) |
 | G0 gate + Dataset v0 + LoRA tune + ablation (G1–G2) | HF dataset + adapter weights + `training/` configs | **Stage 5** (deliberately last) |
-| `zortenet train` loop + model card + report (G3) | CLI + published artifacts | **Stage 5** |
+| `corelab train` loop + model card + report (G3) | CLI + published artifacts | **Stage 5** |
 
 Naming of the published model/dataset follows the framework-naming decision (blueprint §12).
 

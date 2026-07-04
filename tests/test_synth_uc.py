@@ -1,7 +1,7 @@
 """synth_uc_trajectories: outcome-grounded diagnose→correlate demos across all 6G use-case packs."""
 
-from zortenet.packs import SIXG_PACKS
-from zortenet.train.synth import synth_uc_bench_trajectories, synth_uc_trajectories
+from corelab.packs import SIXG_PACKS
+from corelab.train.synth import synth_uc_bench_trajectories, synth_uc_trajectories
 
 
 def test_covers_every_uc_with_grounded_conclusions():

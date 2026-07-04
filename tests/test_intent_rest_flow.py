@@ -3,8 +3,8 @@ a HUMAN approves over REST, only then does apply succeed — across one shared l
 
 from fastapi.testclient import TestClient
 
-from zortenet.app import create_app
-from zortenet.llm.base import LLMProvider, LLMResponse
+from corelab.app import create_app
+from corelab.llm.base import LLMProvider, LLMResponse
 
 
 class IdleProvider(LLMProvider):

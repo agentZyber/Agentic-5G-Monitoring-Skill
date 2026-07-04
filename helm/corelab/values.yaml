@@ -1,0 +1,48 @@
+# CORE Lab NCSRD toolkit chart values.
+# Validation status: `helm lint` + `helm template` verified; live in-cluster deploy is a
+# Tier-3/cloud item (IMPLEMENTATION_PLAN Stage 4).
+
+image:
+  repository: corelab-toolkit
+  tag: dev
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 5001
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# Toolkit configuration (rendered into a ConfigMap; see src/corelab/app.py for semantics)
+config:
+  packs: "location-monitor,netops-copilot,security-sentinel,self-heal,spec-kb,intent-to-network,ran-opt-copilot,multi-agent-noc"
+  llmProvider: "ollama"           # ollama | vllm | openai | anthropic
+  ollamaModel: "llama3.1:8b"
+  executor: "simulated"           # simulated | amarisoft  (real control needs the callbox)
+  trajectories: "trajectories"     # set "off" to disable training-shape run logging
+  publicUrl: ""                    # external URL for OASF/DID descriptors (default: in-cluster)
+  extraEnv: {}                     # e.g. OPEN5GS_BASE_URL, A1_BASE_URL, AMARISOFT_WS_URL
+
+# Optional in-cluster Ollama (CPU by default; set resources/nodeSelector for GPU nodes)
+ollama:
+  enabled: true
+  image: ollama/ollama:latest
+  port: 11434
+  persistence:
+    enabled: false               # enable + size for model caching across restarts
+    size: 20Gi
+    storageClassName: ""
+  resources:
+    requests:
+      cpu: "1"
+      memory: 4Gi
+    limits:
+      memory: 8Gi

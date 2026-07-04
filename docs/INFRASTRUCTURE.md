@@ -18,7 +18,7 @@
 
 ## Tier 0 — Library & interop only (smallest possible)
 
-Use `zortenet.core` / `agent` / `interop` / `datasets` as a Python library, render protocol
+Use `corelab.core` / `agent` / `interop` / `datasets` as a Python library, render protocol
 schemas, and run the test suite. **No LLM, no 5G core, no Docker.**
 
 - **OS:** any (Linux / macOS / Windows)

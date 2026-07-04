@@ -4,14 +4,14 @@ import json
 
 import pytest
 
-from zortenet.agent.runtime import (
+from corelab.agent.runtime import (
     AgentRuntime,
     ToolCallParseError,
     parse_tool_call,
 )
-from zortenet.agent.tools import ToolRegistry
-from zortenet.agent.trajectory import TrajectoryLogger
-from zortenet.llm.base import LLMProvider, LLMResponse
+from corelab.agent.tools import ToolRegistry
+from corelab.agent.trajectory import TrajectoryLogger
+from corelab.llm.base import LLMProvider, LLMResponse
 
 
 class ScriptedProvider(LLMProvider):
@@ -197,14 +197,14 @@ def test_trajectory_logged_in_training_shape(tmp_path):
 
 
 def test_trajectory_from_env(tmp_path, monkeypatch):
-    monkeypatch.delenv("ZORTENET_TRAJECTORIES", raising=False)
+    monkeypatch.delenv("CORELAB_TRAJECTORIES", raising=False)
     assert TrajectoryLogger.from_env() is None  # unset + no default -> disabled
     assert TrajectoryLogger.from_env(str(tmp_path)) is not None  # default dir
 
-    monkeypatch.setenv("ZORTENET_TRAJECTORIES", "off")
+    monkeypatch.setenv("CORELAB_TRAJECTORIES", "off")
     assert TrajectoryLogger.from_env(str(tmp_path)) is None  # explicit opt-out wins
 
-    monkeypatch.setenv("ZORTENET_TRAJECTORIES", str(tmp_path / "custom"))
+    monkeypatch.setenv("CORELAB_TRAJECTORIES", str(tmp_path / "custom"))
     logger = TrajectoryLogger.from_env()
     assert logger is not None
     assert logger.directory == tmp_path / "custom"

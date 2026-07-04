@@ -2,8 +2,8 @@
 
 import json
 
-from zortenet.connectors.amarisoft import AmarisoftClient, AmarisoftExecutor, websocket_transport
-from zortenet.intent.models import Expectation, NetworkIntent
+from corelab.connectors.amarisoft import AmarisoftClient, AmarisoftExecutor, websocket_transport
+from corelab.intent.models import Expectation, NetworkIntent
 
 
 class FakeTransport:

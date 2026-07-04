@@ -12,9 +12,9 @@ import os
 
 import torch
 
-from zortenet.bench.teleagent import SIXG_SCENARIO_PACKS, run_teleagent_bench, sixg_scenarios
-from zortenet.llm.transformers_provider import TransformersProvider
-from zortenet.packs import DEFAULT_PACKS
+from corelab.bench.teleagent import SIXG_SCENARIO_PACKS, run_teleagent_bench, sixg_scenarios
+from corelab.llm.transformers_provider import TransformersProvider
+from corelab.packs import DEFAULT_PACKS
 
 BASE = "Qwen/Qwen3-8B"
 ADAPTER = os.getenv("ZT_ADAPTER", "/home/localadmin/zt/output_v25")

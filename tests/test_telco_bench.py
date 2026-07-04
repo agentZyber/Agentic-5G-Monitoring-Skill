@@ -2,9 +2,9 @@
 
 import json
 
-from zortenet.llm.base import LLMProvider, LLMResponse
-from zortenet.packs.telco_bench.data import load_teleqna, load_teleqna_dict
-from zortenet.packs.telco_bench.runner import (
+from corelab.llm.base import LLMProvider, LLMResponse
+from corelab.packs.telco_bench.data import load_teleqna, load_teleqna_dict
+from corelab.packs.telco_bench.runner import (
     build_prompt,
     parse_choice,
     run_benchmark,

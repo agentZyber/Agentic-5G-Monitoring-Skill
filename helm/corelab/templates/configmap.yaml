@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "corelab.fullname" . }}-config
+  labels:
+    {{- include "corelab.labels" . | nindent 4 }}
+data:
+  CORELAB_PACKS: {{ .Values.config.packs | quote }}
+  CORELAB_LLM: {{ .Values.config.llmProvider | quote }}
+  OLLAMA_MODEL: {{ .Values.config.ollamaModel | quote }}
+  {{- if .Values.ollama.enabled }}
+  OLLAMA_HOST: {{ include "corelab.ollamaHost" . | quote }}
+  {{- end }}
+  CORELAB_EXECUTOR: {{ .Values.config.executor | quote }}
+  CORELAB_TRAJECTORIES: {{ .Values.config.trajectories | quote }}
+  {{- if .Values.config.publicUrl }}
+  CORELAB_PUBLIC_URL: {{ .Values.config.publicUrl | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.config.extraEnv }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

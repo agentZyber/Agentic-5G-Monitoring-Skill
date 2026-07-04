@@ -1,7 +1,7 @@
 """TeleAgentBench: the judges must discriminate competent runs from lazy/unsafe ones."""
 
-from zortenet.bench.teleagent import builtin_scenarios, run_teleagent_bench, to_markdown
-from zortenet.llm.base import LLMProvider, LLMResponse
+from corelab.bench.teleagent import builtin_scenarios, run_teleagent_bench, to_markdown
+from corelab.llm.base import LLMProvider, LLMResponse
 
 
 def _tc(name, args):

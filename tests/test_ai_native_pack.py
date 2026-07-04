@@ -1,8 +1,8 @@
 """ai-native pack: predicted-vs-observed analytics correlation over seeded events + graceful empty store."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.packs.ai_native import PACK, build_registry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.packs.ai_native import PACK, build_registry
 
 
 def _store():

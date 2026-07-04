@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Talk to your (simulated) 5G network — REST face walkthrough.
 set -euo pipefail
-BASE="${ZORTENET_URL:-http://localhost:5001}"
+BASE="${CORELAB_URL:-http://localhost:5001}"
 
 echo "== health =="
 curl -s "$BASE/health" | python3 -m json.tool

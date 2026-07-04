@@ -52,17 +52,17 @@ items needing the live testbed or Ollama are explicitly left open)*
 - [ ] **Live testbed bring-up** (first task): `make testbed-up` for real; fix wiring; record the
       end-to-end smoke test (UERANSIM event → toolkit → agent answer). Clears Stage-0 debt.
       **← still open: requires testbed access (no Docker daemon/Ollama in the build environment).**
-- [x] **Agent runtime loop** (`zortenet.agent.runtime`): provider-agnostic tool-calling loop
+- [x] **Agent runtime loop** (`corelab.agent.runtime`): provider-agnostic tool-calling loop
       (Ollama/OpenAI/Anthropic call shapes), error-recovering, iteration-bounded — 12 tests.
 - [x] **Live MCP server**: stdio entrypoint (`make mcp-stdio`) + **Streamable HTTP mounted at
       `/mcp`** in the app; wire-protocol round-trip (initialize → tools/list → tools/call)
       tested in-process. External-client validation happens at live bring-up.
 - [x] **A2A router mounted**: Agent Card at `/.well-known/agent-card.json` + skill invocation,
-      served by `zortenet.app` (TestClient-verified).
+      served by `corelab.app` (TestClient-verified).
 - [x] **`netops-copilot` v0**: health overview, PromQL KPI query, core subscriptions, UE status —
       mock-tested incl. graceful degradation; **live validation pending testbed**.
 - [x] **Trajectory-capture hooks**: training-shape JSONL via `TrajectoryLogger`
-      ([MODEL_PIPELINE.md](MODEL_PIPELINE.md) §2.2); on by default in the app, `ZORTENET_TRAJECTORIES=off` opts out.
+      ([MODEL_PIPELINE.md](MODEL_PIPELINE.md) §2.2); on by default in the app, `CORELAB_TRAJECTORIES=off` opts out.
 - [x] **`telco-bench` v0 runner**: TeleQnA loader (fetch-on-demand, never vendored) + MCQ runner +
       per-category report + CLI (`make telco-bench`); fixture-tested.
       **← baseline *numbers* still open: requires a running Ollama.**
@@ -81,7 +81,7 @@ testbed bring-up, telco-bench baseline numbers, README GIF.
 historical, and replayed data.
 
 **Build:** *(status as of the testbed-free build pass — same convention as Stage 1)*
-- [x] **Connector registry**: event bus + bounded **EventStore** (`zortenet.core.bus`),
+- [x] **Connector registry**: event bus + bounded **EventStore** (`corelab.core.bus`),
       **UERANSIM control connector** (nr-cli via injectable runner: status/deregister/
       ps-establish — the fault-injection primitive; **live validation pending testbed**),
       **NWDAF stub** (Nnwdaf_AnalyticsInfo shape; honest "no NWDAF in default testbed" results),
@@ -91,10 +91,10 @@ historical, and replayed data.
       `NetworkEvent.text_repr`. **← the one-line wiring inside `src/api.py` lands at live
       bring-up** (needs the legacy heavy-dep environment to run its suite).
 - [x] **Knowledge base**: dependency-light **BM25** retrieval with citations
-      (`zortenet.memory`) + **`spec-kb` pack** (`search_specs`/`kb_status`, lazy ingest from
-      `ZORTENET_KB_DIR`). Embedding/Chroma backend can slot behind the same interface later.
+      (`corelab.memory`) + **`spec-kb` pack** (`search_specs`/`kb_status`, lazy ingest from
+      `CORELAB_KB_DIR`). Embedding/Chroma backend can slot behind the same interface later.
 - [x] **Dataset `pull` + loaders + replay**: registry-driven CLI
-      (`python -m zortenet.datasets pull <name>` — TeleQnA auto-fetch; oversized/licence-flagged
+      (`python -m corelab.datasets pull <name>` — TeleQnA auto-fetch; oversized/licence-flagged
       sets get explicit guidance, never blind downloads); **CSV/JSONL replay → event bus**
       (5G3E-shaped, time-compression). **← replay of *actual* 5G3E data pending its manual fetch.**
 - [x] **`security-sentinel`** (explainable rules: failure bursts, signaling storms, cell-hopping
@@ -122,7 +122,7 @@ the *live-data* versions remain open pending testbed access.**
       agent tools**. *Strict SHACL/official-schema conformance deferred to standards validation.*
 - [x] **Amarisoft connector** (mock-first): WebSocket-JSON remote-API client
       (stats/ue_get/config_set/handover/channel-sim faults) behind an injectable transport +
-      **AmarisoftExecutor** for real intent application (`ZORTENET_EXECUTOR=amarisoft`).
+      **AmarisoftExecutor** for real intent application (`CORELAB_EXECUTOR=amarisoft`).
       **✅ LIVE-VALIDATED (2026-06-12)** against a real Mini (Amarisoft 2023-12-15, 5G NR SA,
       gNB remote API on `:9001`): first-contact fix applied — the WS handshake **requires an `Origin`
       header** and the server sends a `ready` frame to consume before commands (regression-tested).
@@ -135,7 +135,7 @@ the *live-data* versions remain open pending testbed access.**
       *proposes* slice policies **through the intent ledger** (never writes the RIC directly).
       **← raw E2/KPM termination intentionally lives in the RIC; live OSC-RIC validation pending (Tier-2).**
 - [x] **vLLM provider**: OpenAI-compatible chat + tool calling, model autodiscovery,
-      `ZORTENET_LLM=vllm` (the 4×24 GB / 70B-class path). **← live GPU serving run pending.**
+      `CORELAB_LLM=vllm` (the 4×24 GB / 70B-class path). **← live GPU serving run pending.**
 
 **Exit gate:** an NL intent becomes a validated, *applied* configuration change on Amarisoft
 (with approval step), observed in KPIs; a real phone attaches via the B2xx and the agent reports
@@ -205,7 +205,7 @@ Full spec: [MODEL_PIPELINE.md](MODEL_PIPELINE.md).
       as is the DPO pass and the beats-base+RAG evaluation.**
 - [x] **G3 — publish tooling:** hedged **model-card generator** driven by recorded gate evidence
       (card stays marked DRAFT until all gates pass) with the mandatory licence checklist +
-      limitations. `python -m zortenet.train` CLI: status/g0/curate/synth/mixture/config/card.
+      limitations. `python -m corelab.train` CLI: status/g0/curate/synth/mixture/config/card.
       **← actual publication (HF dataset + adapters) is the live item.**
 
 **Exit gate:** the headline earned or honestly refuted — *"an 8B tuned on your own testbed,

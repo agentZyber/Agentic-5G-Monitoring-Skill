@@ -1,10 +1,10 @@
 """sixg_scenarios: per-use-case correlation scenarios are well-formed, entity-specific, and judged right."""
 
-from zortenet.agent.runtime import AgentResult
-from zortenet.bench.teleagent import SIXG_SCENARIO_PACKS, ScenarioContext, sixg_scenarios
-from zortenet.core.bus import EventBus
-from zortenet.intent.ledger import IntentLedger
-from zortenet.packs import load_packs
+from corelab.agent.runtime import AgentResult
+from corelab.bench.teleagent import SIXG_SCENARIO_PACKS, ScenarioContext, sixg_scenarios
+from corelab.core.bus import EventBus
+from corelab.intent.ledger import IntentLedger
+from corelab.packs import load_packs
 
 
 def test_scenarios_well_formed_and_ground_truth_entity_specific():

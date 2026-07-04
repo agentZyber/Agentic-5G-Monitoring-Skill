@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from zortenet.packs.new import generate
+from corelab.packs.new import generate
 
 
 def _load_module(path, name):
@@ -28,14 +28,14 @@ def test_generated_pack_honors_the_contract(tmp_path):
     out = reg.get("energy_agent_status").invoke()
     assert "standalone" in out["store"]
     # …and opts into the shared store by parameter name
-    from zortenet.core.bus import EventStore
+    from corelab.core.bus import EventStore
 
     store = EventStore()
     reg2 = module.build_registry(store=store)
     assert reg2.get("energy_agent_status").invoke()["events_visible"] == 0
 
     # registration line is copy-pasteable
-    assert result["registration"].strip() == '"energy-agent": "zortenet.packs.energy_agent",'
+    assert result["registration"].strip() == '"energy-agent": "corelab.packs.energy_agent",'
     # a test file was scaffolded too
     assert "test_energy_agent.py" in result["test_file"]
 

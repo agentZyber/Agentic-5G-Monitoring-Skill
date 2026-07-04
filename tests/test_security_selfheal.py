@@ -1,9 +1,9 @@
 """security-sentinel detections + self-heal diagnosis/playbooks over a seeded EventStore."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent, Severity
-from zortenet.packs.security_sentinel import build_registry as build_security
-from zortenet.packs.self_heal import PLAYBOOKS, build_registry as build_selfheal
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent, Severity
+from corelab.packs.security_sentinel import build_registry as build_security
+from corelab.packs.self_heal import PLAYBOOKS, build_registry as build_selfheal
 
 
 def _ev(domain, entity, severity=Severity.INFO, event_type="", **payload):

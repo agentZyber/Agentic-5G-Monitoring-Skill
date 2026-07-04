@@ -2,19 +2,19 @@
 
 import pytest
 
-import zortenet.llm.ollama as ollama_mod
-from zortenet.llm import OllamaProvider, ToolSpec, get_provider
+import corelab.llm.ollama as ollama_mod
+from corelab.llm import OllamaProvider, ToolSpec, get_provider
 
 
 def test_default_provider_is_ollama(monkeypatch):
-    monkeypatch.delenv("ZORTENET_LLM", raising=False)
+    monkeypatch.delenv("CORELAB_LLM", raising=False)
     provider = get_provider()
     assert isinstance(provider, OllamaProvider)
     assert provider.name == "ollama"
 
 
 def test_env_var_selects_provider(monkeypatch):
-    monkeypatch.setenv("ZORTENET_LLM", "ollama")
+    monkeypatch.setenv("CORELAB_LLM", "ollama")
     assert get_provider().name == "ollama"
 
 
@@ -24,10 +24,10 @@ def test_unknown_provider_raises():
 
 
 def test_vllm_provider_selection_build_and_parse(monkeypatch):
-    import zortenet.llm.vllm as vllm_mod
-    from zortenet.llm.vllm import VLLMProvider
+    import corelab.llm.vllm as vllm_mod
+    from corelab.llm.vllm import VLLMProvider
 
-    monkeypatch.setenv("ZORTENET_LLM", "vllm")
+    monkeypatch.setenv("CORELAB_LLM", "vllm")
     provider = get_provider(model="Qwen/Qwen2.5-32B-Instruct", base_url="http://gpu:8000")
     assert isinstance(provider, VLLMProvider) and provider.name == "vllm"
 
@@ -73,15 +73,15 @@ def test_vllm_provider_selection_build_and_parse(monkeypatch):
     monkeypatch.setattr(vllm_mod.requests, "post", lambda *a, **k: FakeResp())
     resp = provider.chat([{"role": "user", "content": "go"}])
     assert resp.has_tool_calls
-    from zortenet.agent.runtime import parse_tool_call
+    from corelab.agent.runtime import parse_tool_call
 
     name, args = parse_tool_call(resp.tool_calls[0])  # runtime handles string arguments
     assert (name, args) == ("t", {"a": 1})
 
 
 def test_vllm_model_autodiscovery(monkeypatch):
-    import zortenet.llm.vllm as vllm_mod
-    from zortenet.llm.vllm import VLLMProvider
+    import corelab.llm.vllm as vllm_mod
+    from corelab.llm.vllm import VLLMProvider
 
     class ModelsResp:
         status_code = 200
@@ -97,8 +97,8 @@ def test_vllm_model_autodiscovery(monkeypatch):
 
 def test_transformers_provider_tool_call_parsing():
     # Pure parsing path (no torch): Qwen-style <tool_call> blocks -> runtime tool-call shape.
-    from zortenet.agent.runtime import parse_tool_call
-    from zortenet.llm.transformers_provider import normalize_tool_calls, parse_tool_calls
+    from corelab.agent.runtime import parse_tool_call
+    from corelab.llm.transformers_provider import normalize_tool_calls, parse_tool_calls
 
     text = (
         'Let me check.\n<tool_call>{"name": "diagnose_entity", "arguments": {"entity_id": "ue-7"}}'
@@ -119,7 +119,7 @@ def test_transformers_provider_tool_call_parsing():
 
 
 def test_transformers_provider_selectable_and_lazy(monkeypatch):
-    monkeypatch.setenv("ZORTENET_LLM", "transformers")
+    monkeypatch.setenv("CORELAB_LLM", "transformers")
     p = get_provider(model="Qwen/Qwen3-8B")
     assert p.name == "transformers" and p.model == "Qwen/Qwen3-8B"  # construct w/o loading torch
 
@@ -127,8 +127,8 @@ def test_transformers_provider_selectable_and_lazy(monkeypatch):
 def test_get_provider_openai_and_anthropic_construct_and_degrade(monkeypatch):
     # Regression for the review's HIGH finding: these must not raise ModuleNotFoundError, and
     # must degrade gracefully (is_available False) when the optional SDK/key is absent.
-    from zortenet.llm.anthropic_provider import AnthropicProvider
-    from zortenet.llm.openai_provider import OpenAIProvider
+    from corelab.llm.anthropic_provider import AnthropicProvider
+    from corelab.llm.openai_provider import OpenAIProvider
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)

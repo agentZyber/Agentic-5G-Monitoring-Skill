@@ -2,16 +2,16 @@
 
 import pytest
 
-from zortenet.agent.tools import Tool, ToolRegistry
-from zortenet.interop import (
+from corelab.agent.tools import Tool, ToolRegistry
+from corelab.interop import (
     build_agent_card,
     to_anthropic_tools,
     to_mcp_tools,
     to_ollama_tools,
     to_openai_tools,
 )
-from zortenet.interop.mcp_server import build_mcp_tools
-from zortenet.packs.location_monitor import PACK, build_registry
+from corelab.interop.mcp_server import build_mcp_tools
+from corelab.packs.location_monitor import PACK, build_registry
 
 
 def test_pack_builds_registry_with_tools():
@@ -69,8 +69,8 @@ def test_one_tool_renders_to_every_face():
 
 def test_agent_card_advertises_each_tool_as_a_skill():
     reg = build_registry()
-    card = build_agent_card(reg, name="ZorteNet Test Agent")
-    assert card["name"] == "ZorteNet Test Agent"
+    card = build_agent_card(reg, name="CORE Lab NCSRD Test Agent")
+    assert card["name"] == "CORE Lab NCSRD Test Agent"
     assert card["protocolVersion"] == "1.0"
     assert card["capabilities"]["streaming"] is True
     assert len(card["skills"]) == len(reg)

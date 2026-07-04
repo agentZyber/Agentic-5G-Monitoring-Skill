@@ -1,9 +1,9 @@
 """Amarisoft->bus bridge: live telemetry -> NetworkEvents with health severity."""
 
-from zortenet.connectors.amarisoft import AmarisoftClient
-from zortenet.connectors.amarisoft_bridge import AmarisoftBridge, radio_severity
-from zortenet.core.bus import EventBus
-from zortenet.core.events import EventDomain, Severity
+from corelab.connectors.amarisoft import AmarisoftClient
+from corelab.connectors.amarisoft_bridge import AmarisoftBridge, radio_severity
+from corelab.core.bus import EventBus
+from corelab.core.events import EventDomain, Severity
 
 
 class FakeTransport:

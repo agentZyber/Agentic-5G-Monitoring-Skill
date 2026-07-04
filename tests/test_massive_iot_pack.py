@@ -1,8 +1,8 @@
 """massive-iot pack: cell-vs-network access-congestion correlation over seeded events + graceful empty store."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.packs.massive_iot import PACK, build_registry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.packs.massive_iot import PACK, build_registry
 
 
 def _store():

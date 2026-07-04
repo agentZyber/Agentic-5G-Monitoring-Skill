@@ -1,11 +1,11 @@
 NEF_ADDRESS=localhost:8888
 NEF_USER=netapp@example.com
 NEF_PASSWORD=change-me
-PATH_TO_CERTS=/zortenet_netapp/capif_onboarding
+PATH_TO_CERTS=/corelab_netapp/capif_onboarding
 CAPIF_IP=127.0.0.1
 CAPIF_HOSTNAME=capifcore
 CAPIF_PORT_HTTP=8080
 CAPIF_PORT_HTTPS=443
 CALLBACK_ADDRESS=127.0.0.1:5000
-NETAPP_HOSTNAME=zortenetapp
+NETAPP_HOSTNAME=corelabapp
 

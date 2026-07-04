@@ -242,7 +242,7 @@ class TestCoreEndpoints:
             mock_create_subscription.return_value = SubscriptionResponse(
                 subscription_id="sub_123",
                 external_id="ue123@domain.com",
-                netapp_id="zortenetapp",
+                netapp_id="corelabapp",
                 status="active",
                 raw_response={"subscriptionId": "sub_123"},
                 core_name="default",

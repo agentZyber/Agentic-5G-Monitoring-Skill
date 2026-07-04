@@ -2,9 +2,9 @@
 
 import pytest
 
-from zortenet.connectors.base import CONNECTOR_CATALOG, catalog
-from zortenet.connectors.nwdaf import NWDAFClient
-from zortenet.connectors.ueransim import RunResult, UERANSIMController
+from corelab.connectors.base import CONNECTOR_CATALOG, catalog
+from corelab.connectors.nwdaf import NWDAFClient
+from corelab.connectors.ueransim import RunResult, UERANSIMController
 
 
 class FakeRunner:

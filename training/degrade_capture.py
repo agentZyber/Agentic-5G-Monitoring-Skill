@@ -19,18 +19,18 @@ curation language filter and retried up to twice; only the English-clean record 
 
 import os, sys, time, json, subprocess
 
-from zortenet.agent.runtime import AgentRuntime
-from zortenet.agent.tools import ToolRegistry
-from zortenet.agent.trajectory import TrajectoryLogger
-from zortenet.connectors.amarisoft import AmarisoftClient, websocket_transport
-from zortenet.connectors.amarisoft_bridge import AmarisoftBridge
-from zortenet.core.bus import EventBus
-from zortenet.llm.ollama import OllamaProvider
-from zortenet.train.curate import looks_non_english
-from zortenet.packs.amarisoft import build_registry as amari
-from zortenet.packs.netops_copilot import build_registry as netops
-from zortenet.packs.security_sentinel import build_registry as security
-from zortenet.packs.self_heal import build_registry as selfheal
+from corelab.agent.runtime import AgentRuntime
+from corelab.agent.tools import ToolRegistry
+from corelab.agent.trajectory import TrajectoryLogger
+from corelab.connectors.amarisoft import AmarisoftClient, websocket_transport
+from corelab.connectors.amarisoft_bridge import AmarisoftBridge
+from corelab.core.bus import EventBus
+from corelab.llm.ollama import OllamaProvider
+from corelab.train.curate import looks_non_english
+from corelab.packs.amarisoft import build_registry as amari
+from corelab.packs.netops_copilot import build_registry as netops
+from corelab.packs.security_sentinel import build_registry as security
+from corelab.packs.self_heal import build_registry as selfheal
 
 GNB   = os.getenv("AMARISOFT_WS_URL", "ws://10.50.101.62:9001/")
 CORE  = os.getenv("AMARISOFT_CORE_WS_URL", "ws://10.50.101.62:9000/")
@@ -71,7 +71,7 @@ def ue_radio():
 def arm_watchdog():
     """Detached belt-and-suspenders: force-restore after WATCHDOG_SECONDS no matter what."""
     code = (f"import time;time.sleep({WATCHDOG_SECONDS});"
-            f"from zortenet.connectors.amarisoft import AmarisoftClient,websocket_transport as W;"
+            f"from corelab.connectors.amarisoft import AmarisoftClient,websocket_transport as W;"
             f"AmarisoftClient(transport=W('{GNB}',timeout=8))._call('cell_gain',cell_id={CELL},gain=0)")
     subprocess.Popen([sys.executable, "-c", code],
                      stdout=open("watchdog.log", "w"), stderr=subprocess.STDOUT,

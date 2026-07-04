@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One toolkit, every agent-protocol face: A2A, ACP, MCP, OASF, ANP.
 set -euo pipefail
-BASE="${ZORTENET_URL:-http://localhost:5001}"
+BASE="${CORELAB_URL:-http://localhost:5001}"
 
 echo "== A2A: Agent Card =="
 curl -s "$BASE/.well-known/agent-card.json" | python3 -c "
@@ -18,7 +18,7 @@ curl -s -X POST "$BASE/a2a" -H 'Content-Type: application/json' -d '{
 echo "== ACP: discover + run =="
 curl -s "$BASE/acp/agents" | python3 -m json.tool
 curl -s -X POST "$BASE/acp/runs" -H 'Content-Type: application/json' -d '{
-  "agent_name": "zortenet-5g",
+  "agent_name": "corelab-5g",
   "input": [{"parts": [{"content": "network status?", "content_type": "text/plain"}]}]
 }' | python3 -m json.tool | head -15
 

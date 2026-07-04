@@ -9,10 +9,10 @@ v2.5 SFT config. Self-contained — does not touch the gate ledger.
 import json
 from pathlib import Path
 
-from zortenet.train.configs import build_config
-from zortenet.train.curate import split_train_val, write_jsonl
-from zortenet.train.mixture import SIXG_RATIOS, assemble_mixture
-from zortenet.train.synth import synth_diagnosis_pairs, synth_intent_pairs, synth_uc_trajectories
+from corelab.train.configs import build_config
+from corelab.train.curate import split_train_val, write_jsonl
+from corelab.train.mixture import SIXG_RATIOS, assemble_mixture
+from corelab.train.synth import synth_diagnosis_pairs, synth_intent_pairs, synth_uc_trajectories
 
 OUT = Path("ds_v25")
 OUT.mkdir(exist_ok=True)

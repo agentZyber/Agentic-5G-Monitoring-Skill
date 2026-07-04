@@ -1,7 +1,7 @@
 """intent-to-network pack: the full draft→dry-run→submit→(human)→apply flow, gates included."""
 
-from zortenet.intent.ledger import IntentLedger
-from zortenet.packs.intent_to_network import PACK, SimulatedExecutor, build_registry
+from corelab.intent.ledger import IntentLedger
+from corelab.packs.intent_to_network import PACK, SimulatedExecutor, build_registry
 
 
 def _draft(reg, **overrides):

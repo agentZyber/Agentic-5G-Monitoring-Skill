@@ -2,13 +2,13 @@
 
 import json
 
-from zortenet.agent.runtime import AgentRuntime
-from zortenet.agent.tools import ToolRegistry
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent, Severity
-from zortenet.interop.a2a_tasks import A2ATaskManager
-from zortenet.llm.base import LLMProvider, LLMResponse
-from zortenet.multiagent.noc import build_default_specialists, build_registry as noc_registry
+from corelab.agent.runtime import AgentRuntime
+from corelab.agent.tools import ToolRegistry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent, Severity
+from corelab.interop.a2a_tasks import A2ATaskManager
+from corelab.llm.base import LLMProvider, LLMResponse
+from corelab.multiagent.noc import build_default_specialists, build_registry as noc_registry
 
 
 class ScriptedProvider(LLMProvider):

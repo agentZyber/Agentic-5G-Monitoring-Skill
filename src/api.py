@@ -49,7 +49,7 @@ else:
     tool = _tool
 
 app = FastAPI(
-    title="ZorteNet 5G NetApp",
+    title="CORE Lab NCSRD 5G NetApp",
     version="2.0.0",
     description="Agentic 5G Network Application with Context Enhancement",
 )
@@ -66,7 +66,7 @@ vapp_db: Dict[str, Any] = {"host_name": "", "port": 0, "token": ""}
 q: Queue = Queue(maxsize=1)
 
 callback_url = os.getenv("CALLBACK_ADDRESS", "localhost:5000")
-netapp_host = os.getenv("NETAPP_HOSTNAME", "zortenetapp")
+netapp_host = os.getenv("NETAPP_HOSTNAME", "corelabapp")
 
 capif_host = os.getenv("CAPIF_HOSTNAME", "capifcore")
 capif_port_http = os.getenv("CAPIF_PORT_HTTP", "8080")
@@ -265,7 +265,7 @@ AGENT_FUNCTION_SCHEMAS = [
 @app.get("/")
 def index():
     return {
-        "message": "ZorteNet 5G NetApp - Agentic Context Provider",
+        "message": "CORE Lab NCSRD 5G NetApp - Agentic Context Provider",
         "version": "2.0.0",
     }
 

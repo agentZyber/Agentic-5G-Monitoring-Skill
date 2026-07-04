@@ -1,7 +1,7 @@
 """amarisoft pack: live-shape tools over a fake transport + graceful degradation."""
 
-from zortenet.connectors.amarisoft import AmarisoftClient
-from zortenet.packs.amarisoft import PACK, build_registry
+from corelab.connectors.amarisoft import AmarisoftClient
+from corelab.packs.amarisoft import PACK, build_registry
 
 
 class FakeTransport:

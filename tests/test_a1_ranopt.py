@@ -1,10 +1,10 @@
 """A1 client (mocked REST) + ran-opt-copilot: supervision without bypassing the gate."""
 
-from zortenet.connectors.a1_ric import A1PolicyClient
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.intent.ledger import IntentLedger
-from zortenet.packs.ran_opt_copilot import build_registry
+from corelab.connectors.a1_ric import A1PolicyClient
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.intent.ledger import IntentLedger
+from corelab.packs.ran_opt_copilot import build_registry
 
 
 class FakeResponse:

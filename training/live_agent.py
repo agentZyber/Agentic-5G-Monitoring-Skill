@@ -7,11 +7,11 @@ run as a real, network-grounded trajectory (TrajectoryLogger) for the v2 trainin
 
 import os
 
-from zortenet.agent.runtime import AgentRuntime
-from zortenet.agent.trajectory import TrajectoryLogger
-from zortenet.connectors.amarisoft import AmarisoftClient, websocket_transport
-from zortenet.llm.ollama import OllamaProvider
-from zortenet.packs.amarisoft import build_registry as amari_pack
+from corelab.agent.runtime import AgentRuntime
+from corelab.agent.trajectory import TrajectoryLogger
+from corelab.connectors.amarisoft import AmarisoftClient, websocket_transport
+from corelab.llm.ollama import OllamaProvider
+from corelab.packs.amarisoft import build_registry as amari_pack
 
 GNB = os.getenv("AMARISOFT_WS_URL", "ws://10.50.101.62:9001/")
 CORE = os.getenv("AMARISOFT_CORE_WS_URL", "ws://10.50.101.62:9000/")

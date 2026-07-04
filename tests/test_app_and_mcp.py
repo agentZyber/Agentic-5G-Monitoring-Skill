@@ -6,11 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 import mcp.types as mcp_types
-from zortenet.app import create_app
-from zortenet.interop.mcp_server import create_server
-from zortenet.llm.base import LLMProvider, LLMResponse
-from zortenet.packs import available_packs, load_packs
-from zortenet.packs.location_monitor import build_registry as build_location_registry
+from corelab.app import create_app
+from corelab.interop.mcp_server import create_server
+from corelab.llm.base import LLMProvider, LLMResponse
+from corelab.packs import available_packs, load_packs
+from corelab.packs.location_monitor import build_registry as build_location_registry
 
 
 class ScriptedProvider(LLMProvider):
@@ -231,7 +231,7 @@ def test_mcp_streamable_http_initialize_and_list_tools():
             headers=MCP_HEADERS,
         )
         assert init.status_code == 200, init.text
-        assert init.json()["result"]["serverInfo"]["name"] == "zortenet-5g"
+        assert init.json()["result"]["serverInfo"]["name"] == "corelab-5g"
 
         listed = client.post(
             "/mcp", json=_rpc("tools/list", {}, id_=2), headers=MCP_HEADERS

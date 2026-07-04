@@ -2,8 +2,8 @@
 
 import json
 
-from zortenet.memory.knowledge_base import KnowledgeBase, chunk_text
-from zortenet.packs.spec_kb import build_registry
+from corelab.memory.knowledge_base import KnowledgeBase, chunk_text
+from corelab.packs.spec_kb import build_registry
 
 AMF_TEXT = (
     "The Access and Mobility Management Function (AMF) handles registration management, "

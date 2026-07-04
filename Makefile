@@ -38,27 +38,27 @@ setup-toolkit:
 
 # Run the new toolkit app (REST /agent/ask + A2A + MCP-over-HTTP at /mcp) on :5001.
 run-toolkit:
-	PYTHONPATH=src $(PYTHON_BIN) -m uvicorn zortenet.app:app --host 0.0.0.0 --port 5001
+	PYTHONPATH=src $(PYTHON_BIN) -m uvicorn corelab.app:app --host 0.0.0.0 --port 5001
 
 # Serve the MCP face over stdio (for local MCP clients, e.g. Claude Code/Desktop).
 mcp-stdio:
-	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.interop.mcp_server
+	PYTHONPATH=src $(PYTHON_BIN) -m corelab.interop.mcp_server
 
 # Score the configured model on TeleQnA (fetches the dataset on first run).
 telco-bench:
-	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.packs.telco_bench --data datasets/TeleQnA.txt $(ARGS)
+	PYTHONPATH=src $(PYTHON_BIN) -m corelab.packs.telco_bench --data datasets/TeleQnA.txt $(ARGS)
 
 # Scenario-based agentic benchmark (programmatic, state-based judges).
 teleagent-bench:
-	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.bench $(ARGS)
+	PYTHONPATH=src $(PYTHON_BIN) -m corelab.bench $(ARGS)
 
 # Scaffold a new capability pack (NAME=my-pack DESC="what it does").
 new-pack:
-	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.packs.new $(NAME) --description "$(DESC)"
+	PYTHONPATH=src $(PYTHON_BIN) -m corelab.packs.new $(NAME) --description "$(DESC)"
 
 # The gated training pipeline (ARGS="status" | "g0 ..." | "curate" | "synth" | "mixture" | "config" | "card").
 train:
-	PYTHONPATH=src $(PYTHON_BIN) -m zortenet.train $(ARGS)
+	PYTHONPATH=src $(PYTHON_BIN) -m corelab.train $(ARGS)
 
 # --- Local testbed (testbed/) ------------------------------------------------
 testbed-config:
@@ -74,14 +74,14 @@ testbed-logs:
 	cd testbed && docker compose logs -f
 
 testbed-models:
-	@until docker exec zortenet-ollama ollama list >/dev/null 2>&1; do echo "waiting for ollama to be ready..."; sleep 2; done
-	docker exec zortenet-ollama ollama pull $(OLLAMA_MODEL)
+	@until docker exec corelab-ollama ollama list >/dev/null 2>&1; do echo "waiting for ollama to be ready..."; sleep 2; done
+	docker exec corelab-ollama ollama pull $(OLLAMA_MODEL)
 
 run:
 	$(PYTHON_BIN) -m uvicorn src.api:app --host 0.0.0.0 --port 5000 --reload
 
 docker-build:
-	docker build -t zortenet-netapp .
+	docker build -t corelab-netapp .
 
 docker-up:
 	docker compose up --build

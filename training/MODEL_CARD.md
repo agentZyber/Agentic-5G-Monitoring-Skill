@@ -1,6 +1,6 @@
-# zortenet-netops-qwen3-8b-lora
+# corelab-netops-qwen3-8b-lora
 
-LoRA adapter for **Qwen/Qwen3-8B**, tuned for agentic 5G/6G network operations (tool calling, intent drafting, evidence-grounded diagnosis) with the [ZorteNet toolkit](https://github.com/akiskourtis/Agentic-5G-Monitoring-Skill).
+LoRA adapter for **Qwen/Qwen3-8B**, tuned for agentic 5G/6G network operations (tool calling, intent drafting, evidence-grounded diagnosis) with the [CORE Lab NCSRD toolkit](https://github.com/akiskourtis/Agentic-5G-Monitoring-Skill).
 
 ## Gate evidence (the pipeline's audit trail)
 

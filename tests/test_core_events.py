@@ -1,6 +1,6 @@
 """Unit tests for the generalized NetworkEvent model."""
 
-from zortenet.core.events import EventDomain, NetworkEvent, Severity
+from corelab.core.events import EventDomain, NetworkEvent, Severity
 
 
 def test_network_event_roundtrip():

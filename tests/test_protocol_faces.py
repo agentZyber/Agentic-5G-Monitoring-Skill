@@ -2,8 +2,8 @@
 
 from fastapi.testclient import TestClient
 
-from zortenet.app import create_app
-from zortenet.llm.base import LLMProvider, LLMResponse
+from corelab.app import create_app
+from corelab.llm.base import LLMProvider, LLMResponse
 
 
 class EchoProvider(LLMProvider):
@@ -54,12 +54,12 @@ def test_a2a_jsonrpc_task_through_app():
 def test_acp_agents_and_run_lifecycle():
     with _client() as client:
         agents = client.get("/acp/agents").json()["agents"]
-        assert agents[0]["name"] == "zortenet-5g"
+        assert agents[0]["name"] == "corelab-5g"
 
         run = client.post(
             "/acp/runs",
             json={
-                "agent_name": "zortenet-5g",
+                "agent_name": "corelab-5g",
                 "input": [{"parts": [{"content": "any alerts?", "content_type": "text/plain"}]}],
             },
         ).json()
@@ -71,7 +71,7 @@ def test_acp_agents_and_run_lifecycle():
 
         assert client.post("/acp/runs", json={"agent_name": "ghost", "input": []}).status_code == 404
         assert (
-            client.post("/acp/runs", json={"agent_name": "zortenet-5g", "input": []}).status_code
+            client.post("/acp/runs", json={"agent_name": "corelab-5g", "input": []}).status_code
             == 422
         )
         assert client.get("/acp/runs/ghost").status_code == 404

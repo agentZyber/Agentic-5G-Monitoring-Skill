@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-WORKDIR /zortenet_netapp
+WORKDIR /corelab_netapp
 
 COPY requirements.txt requirements.txt
 RUN apt-get update -y \
@@ -9,6 +9,6 @@ RUN apt-get update -y \
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir -r requirements.txt
 RUN mkdir -p capif_onboarding
-COPY src/ /zortenet_netapp/
+COPY src/ /corelab_netapp/
 EXPOSE 5000
-CMD ["sh", "/zortenet_netapp/prepare.sh"]
+CMD ["sh", "/corelab_netapp/prepare.sh"]

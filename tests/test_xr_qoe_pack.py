@@ -1,8 +1,8 @@
 """xr-qoe pack: app-vs-network QoE correlation over seeded events + graceful empty store."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.packs.xr_qoe import PACK, build_registry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.packs.xr_qoe import PACK, build_registry
 
 
 def _store():

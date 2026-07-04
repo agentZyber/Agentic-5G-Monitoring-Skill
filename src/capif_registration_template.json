@@ -3,7 +3,7 @@
     "capif_host": "",
     "capif_http_port": "",
     "capif_https_port": "",
-    "capif_netapp_username": "zortenet_user",
+    "capif_netapp_username": "corelab_user",
     "capif_netapp_password": "zorte_netapp_password",
     "capif_callback_url": "",
     "description": "zorte_app_description",

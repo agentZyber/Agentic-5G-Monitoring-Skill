@@ -1,8 +1,8 @@
 """energy-agent pack: power-vs-load correlation over seeded events + graceful empty store."""
 
-from zortenet.core.bus import EventStore
-from zortenet.core.events import EventDomain, NetworkEvent
-from zortenet.packs.energy_agent import PACK, build_registry
+from corelab.core.bus import EventStore
+from corelab.core.events import EventDomain, NetworkEvent
+from corelab.packs.energy_agent import PACK, build_registry
 
 
 def _store():

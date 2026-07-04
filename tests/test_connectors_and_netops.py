@@ -2,9 +2,9 @@
 
 import pytest
 
-from zortenet.connectors.open5gs import Open5GSClient
-from zortenet.connectors.prometheus import PrometheusClient
-from zortenet.packs.netops_copilot import PACK, build_registry
+from corelab.connectors.open5gs import Open5GSClient
+from corelab.connectors.prometheus import PrometheusClient
+from corelab.packs.netops_copilot import PACK, build_registry
 
 
 class FakeResponse:
@@ -86,7 +86,7 @@ def test_prometheus_targets_health_simplifies():
                                 "lastError": "",
                             },
                             {
-                                "labels": {"job": "zortenet", "instance": "zortenet:5000"},
+                                "labels": {"job": "corelab", "instance": "corelab:5000"},
                                 "health": "down",
                                 "lastError": "connection refused",
                             },
@@ -181,8 +181,8 @@ def test_get_recent_events_degrades_without_store():
 
 
 def test_get_recent_events_reads_store():
-    from zortenet.core.bus import EventStore
-    from zortenet.core.events import EventDomain, NetworkEvent
+    from corelab.core.bus import EventStore
+    from corelab.core.events import EventDomain, NetworkEvent
 
     store = EventStore()
     store.append(

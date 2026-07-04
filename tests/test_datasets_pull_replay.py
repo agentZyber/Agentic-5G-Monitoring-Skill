@@ -2,17 +2,17 @@
 
 import json
 
-from zortenet.core.bus import EventBus
-from zortenet.core.events import EventDomain
-from zortenet.datasets.pull import pull
-from zortenet.datasets.replay import replay_csv, replay_jsonl
+from corelab.core.bus import EventBus
+from corelab.core.events import EventDomain
+from corelab.datasets.pull import pull
+from corelab.datasets.replay import replay_csv, replay_jsonl
 
 
 # ---- pull -------------------------------------------------------------------
 
 
 def test_pull_teleqna_downloads(tmp_path, monkeypatch):
-    import zortenet.packs.telco_bench.data as bench_data
+    import corelab.packs.telco_bench.data as bench_data
 
     def fake_fetch(dest, url=bench_data.TELEQNA_URL, timeout=60):
         from pathlib import Path

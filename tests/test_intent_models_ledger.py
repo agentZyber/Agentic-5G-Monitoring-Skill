@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from zortenet.intent.ledger import IntentLedger, IntentStatus, IntentTransitionError
-from zortenet.intent.models import (
+from corelab.intent.ledger import IntentLedger, IntentStatus, IntentTransitionError
+from corelab.intent.models import (
     Expectation,
     NetworkIntent,
     render_28312_json,

@@ -1,7 +1,7 @@
 #!/bin/bash
 # v2.6 chained train -> eval (single process tree, reliable). Logs to run_v26.log.
 cd /home/localadmin/zt || exit 1
-PY=/home/localadmin/zortenet-train/bin/python
+PY=/home/localadmin/corelab-train/bin/python
 echo "[run_v26] training start $(date +%H:%M)"
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True $PY -u run_sft.py --config sft_config_v26.json
 echo "[run_v26] training exit $? at $(date +%H:%M)"

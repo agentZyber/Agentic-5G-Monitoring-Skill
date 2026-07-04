@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from zortenet.core.bus import EventBus, EventStore
-from zortenet.core.events import EventDomain, NetworkEvent, Severity
-from zortenet.core.legacy import network_event_from_legacy
+from corelab.core.bus import EventBus, EventStore
+from corelab.core.events import EventDomain, NetworkEvent, Severity
+from corelab.core.legacy import network_event_from_legacy
 
 
 def _ev(domain=EventDomain.LOCATION, entity="ue1", severity=Severity.INFO, **payload):

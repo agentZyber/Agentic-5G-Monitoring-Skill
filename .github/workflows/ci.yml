@@ -63,10 +63,10 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Lint chart
-        run: helm lint helm/zortenet
+        run: helm lint helm/corelab
 
       - name: Template-render chart (with persistence variant)
         run: |
-          helm template ci helm/zortenet > /dev/null
-          helm template ci helm/zortenet --set ollama.persistence.enabled=true > /dev/null
+          helm template ci helm/corelab > /dev/null
+          helm template ci helm/corelab --set ollama.persistence.enabled=true > /dev/null
 

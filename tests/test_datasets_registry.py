@@ -2,7 +2,7 @@
 
 import pytest
 
-from zortenet.datasets import (
+from corelab.datasets import (
     Dataset,
     datasets_for_role,
     get_dataset,
