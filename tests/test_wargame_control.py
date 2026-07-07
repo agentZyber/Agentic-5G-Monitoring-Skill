@@ -33,3 +33,13 @@ def test_index_page_and_api_render():
 def test_unknown_test_is_404():
     client = TestClient(build_control_app())
     assert client.get("/api/run/does-not-exist").status_code == 404
+
+
+def test_battlespace_map_and_campaign_stream():
+    client = TestClient(build_control_app())
+    page = client.get("/map")
+    assert page.status_code == 200 and "Theater Battlespace" in page.text
+    assert "__NODES__" not in page.text and "__WAVES__" not in page.text   # data injected
+    stream = client.get("/api/campaign/stream?pace=0&turns=24")
+    assert stream.status_code == 200
+    assert stream.text.count("event: turn") == 24 and "event: end" in stream.text

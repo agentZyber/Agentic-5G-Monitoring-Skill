@@ -66,6 +66,11 @@ test, click **Run**, output streams live:
 ```bash
 .venv/bin/python training/wargame_control.py            # -> http://127.0.0.1:8800
 ```
+The panel's hero link opens the **Theater Battlespace live map** (`/map`): a 28‑node battlespace under a
+sustained multi‑wave assault (215 threats over 80 turns) that streams onto an interactive map over ~30 s —
+threat arcs, per‑node status, KPI tiles, a wave timeline you can scrub, and pause/replay. Headless console
+version: `PYTHONPATH=src .venv/bin/python training/wargame_campaign.py`.
+
 Hardware‑free tests (unit suite, all scenarios, the 9/9 harness proof, evidence pack) run immediately.
 Tests that need a host light up only when you export its credential **before** launching — `SSHPASS`
 for the GPU box (sovereign LLM defender), `HOSTSENSOR_PASS` for the red VM (eBPF hunt), `AMARISOFT_WS_URL`
