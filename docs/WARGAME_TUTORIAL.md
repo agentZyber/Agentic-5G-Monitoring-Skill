@@ -48,10 +48,10 @@ GPU host, with a tool‑calling model (e.g. `qwen2.5:14b`, `qwen3:8b`).
 ```bash
 cd Agentic-5G-Monitoring-Skill
 python3 -m venv .venv && .venv/bin/pip install -U pip
-.venv/bin/pip install pytest requests websockets          # + torch/trl/peft only if you train
+.venv/bin/pip install pytest requests websockets fastapi uvicorn   # + torch/trl/peft only if you train
 
 # run the test suite — should be all green
-.venv/bin/python -m pytest tests/ -q                       # -> 274 passed
+.venv/bin/python -m pytest tests/ -q                       # -> 281 passed
 
 # 30-second smoke test (fully simulated, no hardware, no LLM):
 PYTHONPATH=src .venv/bin/python training/wargame_guided.py --auto
@@ -59,6 +59,18 @@ PYTHONPATH=src .venv/bin/python training/wargame_guided.py --auto
 
 `tests/conftest.py` puts `src/` on the path for pytest; **scripts** need `PYTHONPATH=src` (shown in
 every command below).
+
+### 2.1 One-click: the War-Game Mission Control panel (recommended)
+The fastest way to run **every** test/demo in this tutorial is the web control panel — one card per
+test, click **Run**, output streams live:
+```bash
+.venv/bin/python training/wargame_control.py            # -> http://127.0.0.1:8800
+```
+Hardware‑free tests (unit suite, all scenarios, the 9/9 harness proof, evidence pack) run immediately.
+Tests that need a host light up only when you export its credential **before** launching — `SSHPASS`
+for the GPU box (sovereign LLM defender), `HOSTSENSOR_PASS` for the red VM (eBPF hunt), `AMARISOFT_WS_URL`
+for the RF testbed; otherwise those cards show the exact command to copy and run yourself. Everything
+below is also runnable directly from the shell.
 
 ---
 
