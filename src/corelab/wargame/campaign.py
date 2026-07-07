@@ -77,8 +77,62 @@ def wave_windows() -> List[Dict[str, Any]]:
     return [{"s": w["s"], "e": w["e"], "name": w["name"]} for w in _WAVES]
 
 
+_CORE_IP = "10.45.0.1"                                    # AMF (N2/N1 anchor) in the synthetic core net
+
+
+def _ip(node_i: int) -> str:
+    return f"10.45.{1 + node_i // 60}.{10 + node_i % 200}"
+
+
+def _telemetry(t: int, injects, mitig, nodes, active_ct: int, rng) -> Dict[str, Any]:
+    """Synthetic-but-correlated telemetry for the side windows — derived from THIS turn's events, so the
+    packet capture, 5G-core and gNB/eNB logs line up with what the map shows. Clearly a simulated
+    exercise, not a real capture."""
+    pcap, core, enb = [], [], []
+    def ts():
+        return f"{t:>2}.{rng.randint(100, 999)}"
+    for inj in injects[:5]:
+        n = nodes[inj["node_i"]]
+        ip, lbl = _ip(inj["node_i"]), n["label"]
+        k = inj["kind"]
+        if k == "jam_link":
+            pcap.append(f"{ts()}  {ip} → gNB   PRACH   preamble flood ×{rng.randint(180,900)}   ⚠")
+            enb.append(f"[{lbl}] ⚠ CQI {rng.randint(12,15)}→{rng.randint(2,5)} · MCS↓ · RACH-fail {rng.randint(20,60)}% — interference")
+            core.append(f"[AMF] re-registration surge from {lbl} · {rng.randint(60,300)} UE-ctx")
+        elif k == "signaling_flood":
+            pcap.append(f"{ts()}  {ip} → {_CORE_IP}   NGAP   InitialUEMessage ×{rng.randint(300,1200)}   ⚠")
+            core.append(f"[AMF] N2 signaling +{rng.randint(300,900)}%/s — overload control engaged  ⚠")
+            enb.append(f"[{lbl}] RRC setup reject · core admission throttled")
+        elif k == "intrude_node":
+            pcap.append(f"{ts()}  {ip} → {_CORE_IP}   PFCP   Session-Mod (unexpected N4)   ⚠")
+            core.append(f"[NRF] ⚠ discovery probe from unregistered NF near {lbl}")
+            enb.append(f"[{lbl}] O&M config write from unknown source  ⚠")
+        else:  # spoof_feed
+            pcap.append(f"{ts()}  {ip} → UPF   GTP-U   payload integrity FAIL   ⚠")
+            core.append(f"[UPF] integrity-check failures ↑ on IoT slice via {lbl}")
+            enb.append(f"[{lbl}] uplink-grant anomaly — spoofed frames")
+    for m in mitig[:4]:
+        lbl = nodes[m["node_i"]]["label"]
+        opt = rng.choice([
+            (f"ACL applied · flow to {lbl} throttled", f"[SMF] PFCP rule → reroute slice off {lbl}",
+             f"[{lbl}] ✓ handover to neighbor cell · CQI recovering"),
+            (f"{lbl} quarantined at edge", f"[AMF] rate-limit UEs from {lbl} · slice re-selected",
+             f"[{lbl}] ✓ beam reconfigure · radio link restored"),
+        ])
+        pcap.append(f"{ts()}  —  countermeasure · {opt[0]}   ✓")
+        core.append(opt[1])
+        enb.append(opt[2])
+    if not injects and not mitig:                          # quiet turn → believable baseline chatter
+        pcap.append(f"{ts()}  {_ip(rng.randrange(len(nodes)))} → {_CORE_IP}   HTTP2   Nnrf_NFDiscovery 200 OK")
+        core.append(rng.choice([f"[AMF] periodic registration update · {active_ct} live ctx",
+                                "[SMF] N4 association heartbeat OK", "[NRF] NF-status sweep: all healthy"]))
+        enb.append(rng.choice([f"[gNB] scheduling nominal · PRB load {rng.randint(20,70)}%",
+                               "[gNB] Xn handover complete", "[gNB] PRACH nominal · no RLF"]))
+    return {"pcap": pcap, "core": core, "enb": enb}
+
+
 def iter_campaign(turns: int = 80, seed: int = 11) -> Iterator[Dict[str, Any]]:
-    """Yield one map-ready frame per turn: new injects, mitigations, the live threat set, and KPIs."""
+    """Yield one map-ready frame per turn: new injects, mitigations, the live threat set, KPIs, telemetry."""
     nodes, _ = build_theater()
     n = len(nodes)
     by_sector: Dict[str, List[int]] = {}
@@ -86,6 +140,7 @@ def iter_campaign(turns: int = 80, seed: int = 11) -> Iterator[Dict[str, Any]]:
         by_sector.setdefault(node["sector"], []).append(idx)
 
     rng = random.Random(seed)
+    trng = random.Random((seed << 16) ^ 0x5EED)    # separate stream: telemetry never perturbs the sim
     active: Dict[str, Dict[str, Any]] = {}     # threat_id -> {node_i, kind, born}
     tid = total_inj = total_mit = 0
 
@@ -130,6 +185,7 @@ def iter_campaign(turns: int = 80, seed: int = 11) -> Iterator[Dict[str, Any]]:
                         "kind": v["kind"], "age": t - v["born"]} for k, v in active.items()],
             "compromised": [nodes[i]["id"] for i in compromised],
             "waves": _wave_names(t),
+            "telemetry": _telemetry(t, injects, mitig, nodes, len(active), trng),
             "kpi": {"active": len(active), "availability": round(healthy / n, 3), "healthy": healthy,
                     "total": n, "injected": total_inj, "mitigated": total_mit,
                     "worst_node": (max(compromised, key=lambda i: nodes[i]["crit"]) and

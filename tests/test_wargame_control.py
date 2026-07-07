@@ -40,6 +40,7 @@ def test_battlespace_map_and_campaign_stream():
     page = client.get("/map")
     assert page.status_code == 200 and "Theater Battlespace" in page.text
     assert "__NODES__" not in page.text and "__WAVES__" not in page.text   # data injected
+    assert all(w in page.text for w in ('id="pcap"', 'id="core"', 'id="enb"'))   # 3 telemetry windows
     stream = client.get("/api/campaign/stream?pace=0&turns=24")
     assert stream.status_code == 200
     assert stream.text.count("event: turn") == 24 and "event: end" in stream.text

@@ -24,10 +24,24 @@ def test_campaign_is_large_dynamic_and_recovers():
 def test_every_frame_is_map_ready():
     kinds = {"jam_link", "signaling_flood", "intrude_node", "spoof_feed"}
     f = list(iter_campaign(30))[15]
-    assert {"turn", "injects", "mitigations", "active", "compromised", "kpi", "waves"} <= set(f)
+    assert {"turn", "injects", "mitigations", "active", "compromised", "kpi", "waves", "telemetry"} <= set(f)
     assert 0.0 <= f["kpi"]["availability"] <= 1.0
     for a in f["active"]:
         assert a["node"].startswith("N") and a["kind"] in kinds
+
+
+def test_frames_carry_correlated_telemetry():
+    # a busy turn produces packet-capture, 5G-core and gNB/eNB lines that reference the live events
+    frames = list(iter_campaign(80))
+    busy = max(frames, key=lambda f: len(f["injects"]) + len(f["mitigations"]))
+    tel = busy["telemetry"]
+    assert {"pcap", "core", "enb"} <= set(tel)
+    assert tel["pcap"] and tel["core"] and tel["enb"]
+    blob = " ".join(tel["pcap"] + tel["core"] + tel["enb"])
+    assert any(p in blob for p in ("NGAP", "PFCP", "GTP-U", "PRACH", "HTTP2"))   # real 5G interfaces
+    assert any(nf in blob for nf in ("[AMF]", "[SMF]", "[UPF]", "[NRF]"))         # core NFs
+    # telemetry must not perturb the simulation (separate rng)
+    assert run_campaign(80)["summary"]["threats_injected"] == 216
 
 
 def test_wave_windows_exposed_for_timeline():

@@ -459,8 +459,16 @@ main{padding:14px 20px 20px;max-width:1280px;margin:0 auto}
 .wavebar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:var(--mono);font-size:12.5px}
 .wavebar .w{color:var(--am)}.wavebar .mission{margin-left:auto;font-weight:700}
 .mission.hold{color:var(--gn)}.mission.att{color:var(--rd)}
+.stage{display:grid;grid-template-columns:1fr 358px;gap:12px;align-items:stretch;height:min(72vh,600px)}
 .mapwrap{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#060a11}
-svg#map{display:block;width:100%;height:auto}
+svg#map{display:block;width:100%;height:100%}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.win{flex:1;display:flex;flex-direction:column;min-height:0;border:1px solid var(--line);border-radius:12px;background:#05090f;overflow:hidden}
+.wh{padding:7px 12px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:8px;flex:none}
+.wh .proto{color:var(--dim);font-weight:400;font-size:10px;margin-left:auto}
+.wlog{flex:1;min-height:0;margin:0;padding:6px 11px;overflow:auto;font-family:var(--mono);font-size:10.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#93a7c2}
+.wlog div{padding:1px 0}.wlog .warn{color:#ff8a95}.wlog .ok{color:var(--gn)}.wlog .mut{color:var(--dim)}
+@media(max-width:900px){.stage{grid-template-columns:1fr;height:auto}svg#map{height:auto}.side{flex-direction:row;flex-wrap:wrap}.win{min-height:160px;flex:1 1 46%}}
 #tip{position:absolute;pointer-events:none;background:#0a1220ee;border:1px solid var(--line);border-radius:8px;
 padding:7px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink);opacity:0;transition:opacity .12s;z-index:9;max-width:220px}
 #tip .k{color:var(--mut)}
@@ -513,6 +521,7 @@ padding:7px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink);opaci
   </div>
   <div class="wavebar"><span>◤ active:</span><span class="w" id="waveName">standing by</span>
     <span class="mission hold" id="mission">● THEATER HELD</span></div>
+  <div class="stage">
   <div class="mapwrap"><div id="tip"></div>
     <svg id="map" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
       <defs><filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
@@ -521,6 +530,12 @@ padding:7px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink);opaci
           <line x1="0" y1="0" x2="0" y2="8" stroke="#ff4d5e" stroke-width="1.4" opacity=".5"/></pattern></defs>
       <g id="bg"></g><g id="edges"></g><g id="fx"></g><g id="nodes"></g>
     </svg>
+  </div>
+  <aside class="side">
+    <section class="win"><div class="wh" style="color:var(--am)">◉ PCAP · attack traffic<span class="proto">N1/N2/N3/N4/SBI</span></div><pre class="wlog" id="pcap"></pre></section>
+    <section class="win"><div class="wh" style="color:var(--cy)">◉ 5G CORE · AMF · SMF · UPF · NRF</div><pre class="wlog" id="core"></pre></section>
+    <section class="win"><div class="wh" style="color:var(--bl)">◉ gNB / eNB · RAN operations</div><pre class="wlog" id="enb"></pre></section>
+  </aside>
   </div>
   <div class="tl" id="tl"><div class="fill" id="tlFill"></div><div class="head" id="tlHead"></div></div>
   <div class="legend" id="legend"></div>
@@ -594,6 +609,12 @@ S('legend').innerHTML =
 
 // ---- live state ----
 let frames=[], cur=-1, live=true, paused=false, es=null, state={};
+const pcapEl=S('pcap'), coreEl=S('core'), enbEl=S('enb');
+function logClass(t){ if(t.indexOf('⚠')>=0) return 'warn'; if(t.indexOf('✓')>=0) return 'ok';
+  if(/ OK|nominal|heartbeat|healthy|complete|·  —/.test(t)) return 'mut'; return ''; }
+function appendLog(el,lines){ if(!lines) return; for(const t of lines){ const d=document.createElement('div');
+  const c=logClass(t); if(c)d.className=c; d.textContent=t; el.appendChild(d); }
+  while(el.childNodes.length>80) el.removeChild(el.firstChild); el.scrollTop=el.scrollHeight; }
 function color(av){ return av>=0.9?'gn':av>=0.75?'am':'rd'; }
 function render(i){ const f=frames[i]; if(!f) return; cur=i;
   const comp={}; f.active.forEach(a=>{comp[a.node]=(comp[a.node]||0)+1;}); state={};
@@ -617,7 +638,8 @@ function spawnMit(nid){ const n=byId[nid]; if(!n)return; const c=el('circle',{cl
 function onTurn(f){ frames.push(f);
   if(live && !paused){ const i=frames.length-1;
     if(i>0){ f.injects.forEach(x=>spawnArc(x.node)); f.mitigations.forEach(x=>spawnMit(x.node)); }
-    render(i); } }
+    render(i);
+    if(f.telemetry){ appendLog(pcapEl,f.telemetry.pcap); appendLog(coreEl,f.telemetry.core); appendLog(enbEl,f.telemetry.enb); } } }
 function setLive(v){ live=v; const c=S('liveChip'); c.style.display='';
   c.className='chip live'+(v?'':' off'); if(!v){c.textContent='◀ REPLAY';c.classList.remove('live');c.style.background='#12203a';c.style.color='var(--mut)';}
   else{ c.textContent='● LIVE'; render(frames.length-1); } }
@@ -632,6 +654,7 @@ document.querySelectorAll('button[data-pace]').forEach(b=>b.addEventListener('cl
   document.querySelectorAll('button[data-pace]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); start(parseFloat(b.dataset.pace)); }));
 
 function start(pace){ if(es) es.close(); frames=[]; cur=-1; live=true; paused=false; fxG.innerHTML='';
+  pcapEl.innerHTML=''; coreEl.innerHTML=''; enbEl.innerHTML='';
   S('pauseBtn').textContent='❚❚ Pause'; S('pauseBtn').classList.remove('on');
   S('liveChip').textContent='● LIVE'; S('liveChip').className='chip live hold';
   es=new EventSource('/api/campaign/stream?pace='+pace+'&turns='+TURNS);
