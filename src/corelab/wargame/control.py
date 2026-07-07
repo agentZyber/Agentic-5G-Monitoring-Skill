@@ -470,11 +470,13 @@ padding:7px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink);opaci
 /* nodes */
 .edge{stroke:#16233a;stroke-width:1}
 .nd .shp{fill:#0d1a2b;stroke:var(--dim);stroke-width:1.6;transition:stroke .3s,fill .3s}
+.nd.d5g .shp{fill:#08181d}.nd.diot .shp{fill:#191204}.nd.dtac .shp{fill:#0a1120}
 .nd.ok .shp{stroke:#2f6d55}
 .nd.hit .shp{stroke:var(--rd);fill:#2a0f16;filter:url(#glow)}
 .nd.hit{animation:thp 1.1s ease-in-out infinite}
 @keyframes thp{50%{opacity:.5}}
-.nd .lab{fill:var(--mut);font:9px var(--mono);text-anchor:middle}
+.nd .lab{fill:var(--mut);font:8.5px var(--mono);text-anchor:middle;pointer-events:none}
+.nd.d5g .lab{fill:#5bc7cf}.nd.diot .lab{fill:#e0a63b}.nd.dtac .lab{fill:#6f9fe0}
 .nd .badge{fill:var(--rd);font:bold 9px var(--mono);text-anchor:middle}
 .arc{fill:none;stroke:var(--rd);stroke-width:1.7;stroke-dasharray:1500;opacity:.85;animation:arcfx 1.25s ease-out forwards}
 @keyframes arcfx{0%{stroke-dashoffset:1500;opacity:.9}55%{stroke-dashoffset:0;opacity:.85}100%{stroke-dashoffset:0;opacity:0}}
@@ -535,27 +537,33 @@ bg.appendChild(el('rect',{x:975,y:0,width:25,height:640,fill:'url(#hatch)'}));
 const advT=el('text',{x:988,y:320,fill:'#ff4d5e',['font-size']:12,['font-family']:'var(--mono)','text-anchor':'middle',transform:'rotate(90 988 320)',opacity:.7}); advT.textContent='◄ ADVERSARY'; bg.appendChild(advT);
 for (const [a,b] of EDGES) edgesG.appendChild(el('line',{class:'edge',x1:NODES[a].x,y1:NODES[a].y,x2:NODES[b].x,y2:NODES[b].y}));
 
-function shape(kind,r){ // identity by silhouette
-  if(kind==='hq')     return el('rect',{class:'shp',x:-r,y:-r,width:2*r,height:2*r,transform:'rotate(45)',rx:2});
-  if(kind==='uplink') return el('polygon',{class:'shp',points:`0,${-r-2} ${r},${r} ${-r},${r}`});
-  if(kind==='uav')    return el('polygon',{class:'shp',points:`0,${-r-1} ${r-1},${r} ${-r+1},${r}`});
-  if(kind==='cell')   return el('rect',{class:'shp',x:-r,y:-r,width:2*r,height:2*r,rx:2});
-  if(kind==='logi')   return el('rect',{class:'shp',x:-r+1,y:-r+1,width:2*r-2,height:2*r-2,rx:1});
-  if(kind==='relay')  return el('circle',{class:'shp',r:r});
-  return el('circle',{class:'shp',r:r-1}); // sensor
+function hexPts(a){let p=[];for(let k=0;k<6;k++){const g=Math.PI/180*(60*k-30);p.push((a*Math.cos(g)).toFixed(1)+','+(a*Math.sin(g)).toFixed(1));}return p.join(' ');}
+function shape(kind,r){ // identity by silhouette (5G / IoT / tactical)
+  if(kind==='c2')    return el('rect',{class:'shp',x:-r,y:-r,width:2*r,height:2*r,transform:'rotate(45)',rx:2});     // ◆ command
+  if(kind==='core')  return el('polygon',{class:'shp',points:hexPts(r*1.15)});                                       // ⬡ 5G core
+  if(kind==='sat')   return el('polygon',{class:'shp',points:`0,${-r-2} ${r},${r} ${-r},${r}`});                     // ▲ SATCOM
+  if(kind==='uav')   return el('polygon',{class:'shp',points:`0,${-r-1} ${r-1},${r} ${-r+1},${r}`});                 // ▲ UAV
+  if(kind==='gnb')   return el('rect',{class:'shp',x:-r,y:-r,width:2*r,height:2*r,rx:2});                            // ■ 5G gNB
+  if(kind==='gw')    return el('rect',{class:'shp',x:-r,y:-r,width:2*r,height:2*r,rx:r*0.55});                       // ▣ IoT gateway
+  if(kind==='log')   return el('rect',{class:'shp',x:-r+1,y:-r+1,width:2*r-2,height:2*r-2,rx:1});                    // ▪ logistics
+  if(kind==='relay') return el('circle',{class:'shp',r:r});                                                          // ◍ backhaul relay
+  return el('circle',{class:'shp',r:r-1});                                                                           // • IoT sensor
 }
+const DCLASS={'5G':'d5g','IoT':'diot','TAC':'dtac'};
 const ndEl={};
 for (const n of NODES){
-  const g=el('g',{class:'nd ok',transform:`translate(${n.x} ${n.y})`}); g.dataset.id=n.id;
+  const g=el('g',{class:'nd ok '+DCLASS[n.domain],transform:`translate(${n.x} ${n.y})`}); g.dataset.id=n.id;
   const r=5+n.crit*0.9; g.appendChild(shape(n.kind,r));
   const badge=el('text',{class:'badge',y:-r-4}); badge.textContent=''; g.appendChild(badge);
-  if(n.crit>=5){ const l=el('text',{class:'lab',y:r+11}); l.textContent=n.label; g.appendChild(l); }
+  const l=el('text',{class:'lab',y:r+11}); l.textContent=n.label; g.appendChild(l);   // every node labelled
   g.addEventListener('mousemove',e=>showTip(e,n)); g.addEventListener('mouseleave',hideTip);
   nodesG.appendChild(g); ndEl[n.id]={g,badge};
 }
 const tip=S('tip');
+const DTAG={'5G':'#5bc7cf','IoT':'#e0a63b','TAC':'#6f9fe0'};
 function showTip(e,n){ const st=state[n.id]||{}; const box=S('map').getBoundingClientRect();
-  tip.innerHTML=`<b>${n.label}</b> · ${n.kind.toUpperCase()}<br><span class="k">sector</span> ${n.sector}`+
+  tip.innerHTML=`<b>${n.label}</b>  <span style="color:${DTAG[n.domain]}">${n.domain==='TAC'?'TACTICAL':n.domain}</span>`+
+    `<br><span class="k">type</span> ${n.kind.toUpperCase()}  <span class="k">sector</span> ${n.sector}`+
     `<br><span class="k">status</span> ${st.hit?('<span style="color:var(--rd)">COMPROMISED ('+st.hit+' threat'+(st.hit>1?'s':'')+')</span>'):'<span style="color:var(--gn)">secure</span>'}`;
   tip.style.left=(e.clientX-box.left+14)+'px'; tip.style.top=(e.clientY-box.top+12)+'px'; tip.style.opacity=1; }
 function hideTip(){ tip.style.opacity=0; }
@@ -570,10 +578,13 @@ WAVES.forEach((w,i)=>{ const b=document.createElement('div'); b.className='band'
 
 // legend
 S('legend').innerHTML =
-  '<span><span class="sw" style="background:#2f6d55"></span><b>secure</b></span>'+
-  '<span><span class="sw" style="background:var(--rd)"></span><b>compromised</b></span>'+
-  '<span>◆ C2</span><span>▲ SATCOM/UAV</span><span>■ gNB/LOG</span><span>● ISR/relay</span>'+
-  '<span style="color:var(--rd)">╱ threat launch</span><span style="color:var(--gn)">◌ mitigation</span>';
+  '<span><b style="color:#5bc7cf">5G</b>&nbsp; ■ gNB &nbsp;·&nbsp; ⬡ 5G core &nbsp;·&nbsp; ◍ backhaul relay</span>'+
+  '<span><b style="color:#e0a63b">IoT</b>&nbsp; ● sensor field &nbsp;·&nbsp; ▣ gateway</span>'+
+  '<span><b style="color:#6f9fe0">TACTICAL</b>&nbsp; ◆ C2 &nbsp;·&nbsp; ▲ SATCOM &nbsp;·&nbsp; ▲ UAV &nbsp;·&nbsp; ▪ logistics</span>'+
+  '<span style="margin-left:6px"><span class="sw" style="background:#2f6d55"></span>secure'+
+    '&nbsp;&nbsp;<span class="sw" style="background:var(--rd)"></span>compromised'+
+    '&nbsp;&nbsp;<span style="color:var(--rd)">╱ threat</span>'+
+    '&nbsp;&nbsp;<span style="color:var(--gn)">◌ mitigation</span></span>';
 
 // ---- live state ----
 let frames=[], cur=-1, live=true, paused=false, es=null, state={};
@@ -581,7 +592,8 @@ function color(av){ return av>=0.9?'gn':av>=0.75?'am':'rd'; }
 function render(i){ const f=frames[i]; if(!f) return; cur=i;
   const comp={}; f.active.forEach(a=>{comp[a.node]=(comp[a.node]||0)+1;}); state={};
   for(const n of NODES){ const c=comp[n.id]||0; const o=ndEl[n.id]; state[n.id]={hit:c};
-    o.g.setAttribute('class','nd '+(c?'hit':'ok')); o.badge.textContent=c>1?c:''; }
+    o.g.classList.toggle('hit',!!c); o.g.classList.toggle('ok',!c);   // keep the domain class
+    o.badge.textContent=c>1?c:''; }
   const k=f.kpi; const av=Math.round(k.availability*100);
   S('kAvail').textContent=av+'%'; S('kAvail').className='val '+color(k.availability);
   S('kAvail2').textContent=k.healthy+'/'+k.total+' nodes';

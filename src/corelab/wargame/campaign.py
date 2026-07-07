@@ -13,16 +13,22 @@ from __future__ import annotations
 import random
 from typing import Any, Dict, Iterator, List, Tuple
 
-NODE_LABEL = {"hq": "C2", "uplink": "SATCOM", "cell": "5G-gNB", "relay": "RELAY",
-              "sensor": "ISR", "logi": "LOG", "uav": "UAV"}
+# node kinds grouped by domain — the battlespace is a 5G/IoT tactical network:
+#   5G  : gnb (5G base station), core (5G core / UPF+AMF), relay (5G backhaul)
+#   IoT : iot (IoT sensor field), gw (IoT gateway)
+#   TAC : c2 (command & control), sat (SATCOM uplink), uav (ISR UAV), log (logistics)
+NODE_LABEL = {"gnb": "gNB", "core": "5GC", "relay": "RELAY", "iot": "IoT", "gw": "IoT-GW",
+              "c2": "C2", "sat": "SATCOM", "uav": "UAV", "log": "LOG"}
+DOMAIN = {"gnb": "5G", "core": "5G", "relay": "5G", "iot": "IoT", "gw": "IoT",
+          "c2": "TAC", "sat": "TAC", "uav": "TAC", "log": "TAC"}
 KIND_LABEL = {"jam_link": "JAM", "signaling_flood": "FLOOD", "intrude_node": "INTRUDE", "spoof_feed": "SPOOF"}
-CRIT = {"hq": 6, "uplink": 5, "cell": 4, "relay": 3, "sensor": 2, "uav": 2, "logi": 1}
+CRIT = {"c2": 6, "core": 6, "sat": 5, "gnb": 4, "relay": 3, "gw": 3, "uav": 2, "iot": 2, "log": 1}
 
 # force laydown: sector -> (x-band, [(node kind, count), …]); y spans the full height
 _LAYDOWN: List[Tuple[str, Tuple[int, int], List[Tuple[str, int]]]] = [
-    ("Rear",    (70, 300),  [("logi", 4), ("uplink", 2), ("hq", 1)]),
-    ("Main",    (390, 650), [("relay", 6), ("hq", 1), ("cell", 3)]),
-    ("Forward", (710, 940), [("sensor", 6), ("cell", 3), ("uav", 2)]),
+    ("Rear",    (70, 300),  [("core", 1), ("sat", 2), ("c2", 1), ("log", 2)]),
+    ("Main",    (390, 650), [("gnb", 2), ("relay", 5), ("core", 1), ("c2", 1), ("gw", 1)]),
+    ("Forward", (710, 940), [("gnb", 4), ("iot", 5), ("uav", 2), ("gw", 1)]),
 ]
 
 # adversary waves: mid-weighted intensity, each targeting sector(s) with a threat menu
@@ -49,9 +55,9 @@ def build_theater(seed: int = 7) -> Tuple[List[Dict[str, Any]], List[List[int]]]
         for kind, count in spec:
             for _ in range(count):
                 nodes.append({
-                    "id": f"N{i}", "kind": kind, "x": round(rng.uniform(x0, x1), 1),
-                    "y": round(rng.uniform(70, 570), 1), "label": f"{NODE_LABEL[kind]}-{i}",
-                    "sector": sector, "crit": CRIT[kind]})
+                    "id": f"N{i}", "kind": kind, "domain": DOMAIN[kind],
+                    "x": round(rng.uniform(x0, x1), 1), "y": round(rng.uniform(70, 570), 1),
+                    "label": f"{NODE_LABEL[kind]}-{i}", "sector": sector, "crit": CRIT[kind]})
                 i += 1
     edges: set = set()
     for a, na in enumerate(nodes):
