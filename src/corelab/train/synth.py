@@ -476,3 +476,79 @@ def synth_uc_bench_trajectories(n_per_uc: int = 200, seed: int = 42, use_cases=N
                          "context": "bench-matched"},
             })
     return out
+
+
+def synth_wargame_trajectories(n_per_scenario: int = 80, seed: int = 42) -> List[Dict[str, Any]]:
+    """Gold BLUE-defender demos for the war-game — multi-vector aware.
+
+    Runs the WINNING reactive policy over each scenario against an adversary suite deliberately
+    weighted toward MULTI-THREAT barrages — the case the single-step agent fails (it clears one
+    threat, then stalls). Captures, per turn, the exact ``observation -> tool-call`` the gold policy
+    chose, recorded in the SAME prompt format the :class:`AgentController` uses at eval time (via
+    :func:`~corelab.wargame.controllers.render_agent_messages`) so train and eval never diverge — a
+    silent prompt mismatch is what sinks a fine-tune. The blue observation now carries the active-
+    threat id board, so ``apply_countermeasure(threat_id=...)`` is groundable turn by turn and the
+    gold "apply to each active id in succession" loop is learnable statelessly. One sample per turn;
+    deduped on (prompt, tool, args). Outcome-validated: the recorded policy wins by construction.
+    """
+    import random
+
+    from corelab.wargame import (SCENARIOS, Action, ApprovalPolicy, ReactiveController,
+                                 ScriptedController, get_scenario, run_wargame)
+    from corelab.wargame.benchmark import scripted_reds
+    from corelab.wargame.controllers import render_agent_messages
+
+    ELEMENTS = ["link-1", "cell-1", "node-1", "feed-1", "link-2", "gnb-3", "sat-uplink", "relay-7"]
+
+    class _Rec:
+        """Wraps the gold controller and records each real (eval-format prompt -> tool call)."""
+
+        def __init__(self, inner, sid):
+            self.inner, self.sid, self.name, self.samples = inner, sid, "gold-blue", []
+
+        def decide(self, role, obs, registry, turn):
+            act = self.inner.decide(role, obs, registry, turn)
+            if act and act.tool != "__hold__" and act.tool in registry:
+                msgs = render_agent_messages(role, obs, turn)          # system + user, exactly as eval
+                msgs.append({"role": "assistant", "content": "", "tool_calls": [
+                    {"function": {"name": act.tool, "arguments": dict(act.args)}}]})
+                self.samples.append({"messages": msgs,
+                                     "meta": {"source": "synth-wargame", "scenario": self.sid,
+                                              "tool": act.tool}})
+            return act
+
+    def _episode(sc, red):
+        rec = _Rec(ReactiveController(), sc.scenario_id)
+        run_wargame(sc, red, rec, ApprovalPolicy(mode="auto-approve"))
+        return rec.samples
+
+    rng = random.Random(seed)
+    out: List[Dict[str, Any]] = []
+    seen: set = set()
+
+    def _keep(samples):
+        for s in samples:
+            tc = s["messages"][-1]["tool_calls"][0]["function"]
+            key = (s["messages"][1]["content"], tc["name"], tuple(sorted(tc["arguments"].items())))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s)
+
+    for sid in SCENARIOS:
+        sc = get_scenario(sid)
+        # 1) the exact benchmark adversary profiles (single-jam / multi-vector / persistent) so the
+        #    training distribution covers what the eval throws — the bench-matching that reversed the
+        #    6G regression, aimed here at the multi-vector profile the agent was losing.
+        for red_factory in scripted_reds(sc).values():
+            _keep(_episode(sc, red_factory()))
+        # 2) randomized barrages weighted toward MULTI-threat (k in 2..4): most episodes stack several
+        #    simultaneous threats so the gold "apply to each active id in turn" loop dominates the set.
+        for _ in range(n_per_scenario):
+            k = rng.choices([1, 2, 3, 4], weights=[1, 3, 3, 2])[0]
+            acts = [Action(rng.choice(sc.red_actions), {"element": rng.choice(ELEMENTS)})
+                    for _ in range(k)]
+            if k >= 3 and rng.random() < 0.4:                          # stagger a wave so blue re-senses
+                acts.insert(rng.randint(1, k - 1), Action("__hold__"))
+            _keep(_episode(sc, ScriptedController(acts)))
+    return out

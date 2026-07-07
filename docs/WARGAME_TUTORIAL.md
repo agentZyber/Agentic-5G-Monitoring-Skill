@@ -115,6 +115,13 @@ On a host with Ollama, set the model — the demo adds a `blue:agent` row to the
 OLLAMA_MODEL=qwen2.5:14b OLLAMA_HOST=http://localhost:11434 \
   WARGAME_SCENARIO=all PYTHONPATH=src .venv/bin/python training/wargame_demo.py
 ```
+A capable sovereign base model (e.g. `qwen3:8b`) **wins the benchmark 9/9 out of the box** — all three
+scenarios × all three adversary profiles (single‑jam, multi‑vector, persistent), matching the
+scripted‑gold reference — because the blue observation surfaces the open‑threat board and the blue
+system prompt encodes a crisp defender doctrine. **No fine‑tuning is required for this tier**; a
+dedicated fine‑tune is only worth it for a harder adversary tier (or a smaller edge model) where the
+base model genuinely fails. See "Sovereign LLM defender on the benchmark (honest result)" in
+[`WARGAME_POC.md`](WARGAME_POC.md) for the diagnosis.
 
 ---
 
