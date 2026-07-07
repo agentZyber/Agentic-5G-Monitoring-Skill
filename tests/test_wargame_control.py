@@ -43,3 +43,10 @@ def test_battlespace_map_and_campaign_stream():
     stream = client.get("/api/campaign/stream?pace=0&turns=24")
     assert stream.status_code == 200
     assert stream.text.count("event: turn") == 24 and "event: end" in stream.text
+
+
+def test_analysis_page_renders():
+    page = TestClient(build_control_app()).get("/analysis")
+    assert page.status_code == 200
+    for token in ("QLoRA", "doctrine", "JUDGE", "0 / 9", "9 / 9"):   # model + algorithms + honest numbers
+        assert token in page.text

@@ -220,6 +220,10 @@ def build_control_app() -> FastAPI:
         nodes, edges = build_theater()
         return HTMLResponse(_map_page(nodes, edges))
 
+    @app.get("/analysis", response_class=HTMLResponse)
+    def analysis():
+        return HTMLResponse(_ANALYSIS_PAGE)
+
     @app.get("/api/campaign/stream")
     def api_campaign(turns: int = 80, pace: float = 0.34, seed: int = 11):
         turns = max(20, min(160, turns))
@@ -323,6 +327,7 @@ background:linear-gradient(110deg,rgba(53,214,159,.10),rgba(255,176,32,.06) 60%,
   <div class="brand">CORE&nbsp;LAB<span class="dot">·</span><span class="am">NCSRD</span></div>
   <div class="sub">War-Game Mission Control — run every test / demo, live</div>
   <div class="spacer"></div>
+  <a href="/analysis" style="text-decoration:none;color:var(--bl);font-size:12.5px;font-weight:600;margin-right:14px">Analysis ↗</a>
   <div class="legend"><span><b style="color:var(--gn)">●</b> pass</span>
     <span><b style="color:var(--rd)">●</b> fail</span>
     <span><b style="color:var(--am)">●</b> running</span>
@@ -495,6 +500,7 @@ padding:7px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink);opaci
   <button data-pace="0.6">Slow</button>
   <button data-pace="0.34" class="on">Normal</button>
   <button data-pace="0.16">Fast</button>
+  <a href="/analysis" style="text-decoration:none"><button>Analysis</button></a>
   <a href="/" style="text-decoration:none"><button>← Panel</button></a>
 </header>
 <main>
@@ -642,5 +648,145 @@ def _map_page(nodes: List[Dict], edges: List[List[int]]) -> str:
             .replace("__EDGES__", json.dumps(edges))
             .replace("__WAVES__", json.dumps(wave_windows())))
 
+
+# ---------------------------------------------------------------------------------------------------
+_ANALYSIS_PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORE Lab · NCSRD — Model & Algorithm Analysis</title>
+<style>
+:root{--am:#ffb020;--bg:#070b12;--bl:#4aa8ff;--cy:#3ad0d8;--dim:#3f5169;--gn:#35d69f;
+--ink:#dbe6f2;--line:#182335;--mut:#6d829e;--panel:#0d131e;--rd:#ff4d5e;
+--mono:ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 700px at 72% -12%,#0d1830 0,var(--bg) 55%);
+color:var(--ink);font:15px/1.65 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);
+position:sticky;top:0;background:rgba(7,11,18,.9);backdrop-filter:blur(8px);z-index:5;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.5px}.brand .am{color:var(--am)}.brand .dot{color:var(--dim);margin:0 5px}
+.sub{color:var(--mut);font-size:12px}.spacer{flex:1}
+a.nav{color:var(--bl);text-decoration:none;font-size:13px;border:1px solid var(--line);padding:5px 11px;border-radius:8px}
+a.nav:hover{border-color:var(--bl)}
+main{max-width:920px;margin:0 auto;padding:24px 22px 80px}
+h1{font-size:22px;margin:6px 0 2px}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--am);margin:34px 0 10px;
+border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:15px;margin:20px 0 4px;color:var(--cy)}
+p{color:#c3d2e4}.mut{color:var(--mut)}
+code{font-family:var(--mono);font-size:.86em;background:#0c1524;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--ink)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+td .g{color:var(--gn)}td .r{color:var(--rd)}td .a{color:var(--am)}
+.tag{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:20px;border:1px solid var(--line);color:var(--mut)}
+.card{background:linear-gradient(180deg,var(--panel),#0a101a);border:1px solid var(--line);border-radius:12px;padding:2px 18px;margin:14px 0}
+.note{border-left:3px solid var(--am);padding:8px 14px;margin:14px 0;background:#140f04;border-radius:0 8px 8px 0;color:#e9d4a6;font-size:14px}
+ul{padding-left:20px}li{margin:5px 0;color:#c3d2e4}
+svg{max-width:100%;height:auto}
+.small{font-size:13px}
+</style></head><body>
+<header>
+  <div class="brand">CORE&nbsp;LAB<span class="dot">·</span><span class="am">NCSRD</span></div>
+  <div class="sub">War-Game — Model &amp; Algorithm Analysis</div>
+  <div class="spacer"></div>
+  <a class="nav" href="/">← Panel</a><a class="nav" href="/map">Live map ↗</a>
+</header>
+<main>
+  <h1>How the war-game works — model &amp; algorithms</h1>
+  <p class="mut">A red/blue adversarial simulation on a 5G/IoT tactical network. Red injects threats; a
+  blue defender senses and neutralises them through a human-approval (doctrine) gate; a programmatic judge
+  scores the outcome. Everything is deterministic, seeded, auditable, and non-kinetic — a decision-support
+  exercise, not a live weapon system.</p>
+
+  <h2>The engagement loop</h2>
+  <div class="card"><svg viewBox="0 0 900 210" role="img" aria-label="engagement loop">
+    <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#4aa8ff"/></marker></defs>
+    <g font-family="var(--mono)" font-size="12" text-anchor="middle">
+      <rect x="20" y="70" width="150" height="66" rx="10" fill="#1a0f14" stroke="#ff4d5e"/>
+      <text x="95" y="98" fill="#ff8a95" font-weight="bold">RED</text><text x="95" y="116" fill="#9fb0c6">inject threat</text>
+      <rect x="230" y="60" width="180" height="86" rx="10" fill="#0c1524" stroke="#3f5169"/>
+      <text x="320" y="88" fill="#dbe6f2" font-weight="bold">WORLD</text><text x="320" y="106" fill="#9fb0c6">event log →</text><text x="320" y="122" fill="#9fb0c6">active threats + availability</text>
+      <rect x="470" y="70" width="180" height="66" rx="10" fill="#0a1a12" stroke="#35d69f"/>
+      <text x="560" y="94" fill="#7ee7bf" font-weight="bold">BLUE defender</text><text x="560" y="112" fill="#9fb0c6">sense → decide → act</text>
+      <rect x="712" y="70" width="168" height="66" rx="10" fill="#0a1120" stroke="#4aa8ff"/>
+      <text x="796" y="94" fill="#9dc4ff" font-weight="bold">JUDGE</text><text x="796" y="112" fill="#9fb0c6">4 outcome checks</text>
+      <line x1="172" y1="103" x2="226" y2="103" stroke="#4aa8ff" stroke-width="2" marker-end="url(#ah)"/>
+      <line x1="412" y1="103" x2="466" y2="103" stroke="#4aa8ff" stroke-width="2" marker-end="url(#ah)"/>
+      <line x1="652" y1="103" x2="708" y2="103" stroke="#4aa8ff" stroke-width="2" marker-end="url(#ah)"/>
+      <path d="M560 70 C560 30 320 30 320 56" fill="none" stroke="#35d69f" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+      <text x="440" y="26" fill="#7ee7bf" font-size="11">countermeasure (doctrine-approved) resolves the threat</text>
+    </g></svg>
+    <p class="small mut">The world is an append-only <b>event log</b>; <code>active_threats</code> and
+    <code>availability</code> are <i>derived</i> from it, so the judge and every controller reason over the
+    same auditable substrate.</p>
+  </div>
+
+  <h2>1 · The model — a sovereign LLM defender</h2>
+  <p>The "agent" defender is a <b>local, sovereign</b> model — <code>Qwen3-8B</code> run in 4-bit on a single
+  L4 GPU, no cloud. We fine-tuned it with <b>QLoRA</b> to play blue, and measured it honestly on a fixed
+  9-game benchmark (3 scenarios × 3 adversary profiles). The reference is the scripted doctrine policy,
+  which wins by construction.</p>
+  <table>
+    <tr><th>Defender</th><th>Win rate</th><th>What it does</th></tr>
+    <tr><td>Base <code>Qwen3-8B</code> agent</td><td><span class="r">0 / 9 (0%)</span></td><td>detects threats but never completes the approved countermeasure</td></tr>
+    <tr><td>Fine-tuned agent (QLoRA)</td><td><span class="a">2 / 9 (22%)</span></td><td>learned the detect→apply loop; wins single-threat, still loses multi-vector</td></tr>
+    <tr><td>Doctrine policy (scripted)</td><td><span class="g">9 / 9 (100%)</span></td><td>the gold reference — deterministic, this drives the live map</td></tr>
+    <tr><td>Stateless reference policy</td><td><span class="g">9 / 9 (100%)</span></td><td>proves the benchmark is solvable single-step (no model, no GPU)</td></tr>
+  </table>
+  <div class="note"><b>Honest read.</b> Fine-tuning moved the sovereign model from <b>0% → 22%</b> — real, but
+  well below the deterministic 100%. It reliably clears a single threat; sustained <i>multi-vector</i> pressure
+  is still hard for a single-step LLM. So the <b>live map is driven by the scripted doctrine policy</b>, not the
+  LLM — the right call for a smooth 216-threat animation, and stated plainly rather than dressed up.</div>
+
+  <h2>2 · The algorithms</h2>
+
+  <h3>a · Blue doctrine policy (the gold reference)</h3>
+  <p>A deterministic rule loop, not learned. Each turn: <b>sense</b> (<code>detect_threats</code>, read-only),
+  then <b>neutralise worst-first</b> — sort active threats by node <i>criticality</i> (C2/5G-core &gt; SATCOM &gt;
+  gNB &gt; relay/gateway &gt; UAV/IoT &gt; logistics), then by age, and apply an approved countermeasure to the top
+  ones. It <b>surges reserves under load</b>: throughput = <code>base + ⌊active/4⌋</code>, so it dips under a fast
+  onset and recovers between waves. Cost ≈ <code>O(A log A)</code> per turn (A = active threats).</p>
+
+  <h3>b · Single-step LLM agent controller</h3>
+  <p>The learnable defender is <b>stateless</b>: it sees one observation (mission status, recent events, and the
+  <b>active-threat board</b> with threat-ids) and emits exactly one tool call. Exposing the ids on the board is
+  what makes <code>apply_countermeasure(threat_id=…)</code> groundable — without it a single-step model is blind
+  to <i>which</i> threat to hit when several are active. Train and eval share one prompt renderer so their formats
+  never diverge (a silent mismatch is what sinks a fine-tune).</p>
+
+  <h3>c · QLoRA fine-tuning</h3>
+  <p>The 8B base is frozen and 4-bit quantised (<code>nf4</code>); we train only small <b>low-rank adapters</b>
+  (<code>r=32</code> on the attention + MLP projections — a fraction of the parameters) for 3 epochs on ~1,400
+  gold blue trajectories generated by the doctrine policy (deduped observation→tool-call pairs) mixed with
+  general instructions to prevent forgetting. Gate discipline <code>G0→G3</code>: G0 base baseline, G1 curated
+  data, G2 train + eval, G3 ship only if it beats base.</p>
+
+  <h3>d · Campaign simulator (the live map)</h3>
+  <p>A 28-node battlespace across three sectors. Four overlapping adversary <b>waves</b> use a <b>trapezoidal
+  intensity</b> profile (ramp-up, sustained peak, ramp-down); each turn red injects <code>k ≈ intensity</code>
+  threats at sector-targeted nodes, blue responds with the load-scaling policy above. The result is emergent, not
+  scripted: availability <b>dips to ~68% with ~14 concurrent threats</b> under the multi-vector surge, then
+  recovers to 100% (all 216 threats neutralised). Deterministic given the seed.</p>
+
+  <h3>e · The judge (programmatic, no LLM)</h3>
+  <p>Outcome-based scoring on four checks — a run succeeds only if all pass:</p>
+  <ul>
+    <li><b>Mission availability</b> — service healthy at the end (no active threat on the mission asset).</li>
+    <li><b>Time-to-detect</b> — first threat sensed within the doctrine deadline.</li>
+    <li><b>Threats neutralised</b> — <i>every</i> injected threat resolved, not just the first.</li>
+    <li><b>Human-control held</b> — no countermeasure ever applied without doctrine approval (EU-AI-Act evidence).</li>
+  </ul>
+  <p class="mut small">availability = healthy-turns / total-turns · everything derived from the event log, so the
+  score is reproducible and independent of the controller's internals.</p>
+
+  <h2>3 · Why it's built this way</h2>
+  <ul>
+    <li><b>Sovereign</b> — the model runs locally in 4-bit; no data leaves the box.</li>
+    <li><b>Auditable</b> — append-only event log + a hash-chain over the approval decisions.</li>
+    <li><b>Human-in-the-loop</b> — the only consequential action (a countermeasure) passes a doctrine gate.</li>
+    <li><b>Honest by construction</b> — a programmatic judge and a scripted gold line mean improvement is
+      measured, never asserted.</li>
+  </ul>
+</main></body></html>"""
 
 app = build_control_app()
