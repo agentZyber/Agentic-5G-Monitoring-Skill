@@ -5,7 +5,8 @@
       "name": "wargame-control",
       "runtimeExecutable": "/Users/akiskourtis/Documents/github/Agentic-5G-Monitoring-Skill/.venv/bin/python",
       "runtimeArgs": ["/Users/akiskourtis/Documents/github/Agentic-5G-Monitoring-Skill/training/wargame_control.py"],
-      "port": 8800
+      "port": 8800,
+      "autoPort": true
     }
   ]
 }
