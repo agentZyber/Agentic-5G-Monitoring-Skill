@@ -63,6 +63,7 @@ core.
    DECISION &   │  Red controllers │ Blue controllers │ Multi‑agent teams        │  ✅
    AGENT LAYER  │  Scripted · Reactive(doctrine) · LLM agent · Adaptive(CAM)     │
                 │  Sovereign models (QLoRA) · Gate‑disciplined training (G0→G3)  │
+                │  Causal engine · CausalProvider interop (twin‑as‑SCM oracle)   │
                 └──────────────────────────────────────────────────────────────┘
                 ┌──────────────────────────────────────────────────────────────┐
    INTEROP      │  A2A · MCP · ACP · AG‑UI · ANP · AGNTCY/OASF descriptors        │  ✅
@@ -168,6 +169,7 @@ rather than an application:
 | **Scenario / doctrine** | a `WarGameScenario` (init state + arsenals + objectives) | reproducible, judged, replayable |
 | **External system / team** | an interop endpoint (A2A/MCP/ACP) | first‑class participant over the wire |
 | **Model back‑end** | the `LLMProvider` interface | any sovereign or hosted model as an agent |
+| **Causal reasoner** | the `CausalProvider` interface | graph, counterfactuals & attributions feed agents, judge & operator |
 
 Because all six speak the same event‑sourced substrate and the same tool abstraction, a scripted heuristic, a
 human, a sovereign fine‑tuned model, and a partner's proprietary bench are **measured on the identical axis**.
@@ -195,7 +197,41 @@ curriculum from after‑action gaps.
 
 ---
 
-## 9 · War‑game engine, judge & doctrine gate (✅ available)
+## 9 · Causal AI interoperability (✅ available)
+
+Correlation is not enough for a defence decision — an operator needs to know *what caused* the mission to
+degrade and *what would have happened* under a different action. Because the digital twin is **deterministic,
+seeded and intervention‑based, it is itself a structural causal model (SCM)**: "what if this attack had never
+happened?" is answered by an *exact re‑run*, not an estimate. CORE‑DT makes that a first‑class, **bidirectional**
+interop surface (`corelab/causal/`).
+
+**Primitives — implemented & tested:**
+- **Causal graph** — `discover_graph()` returns the SCM `adversary → node → sector → mission`, with **blue** as
+  an intervention variable on each node.
+- **do() / counterfactual** — `counterfactual(Intervention(suppress_threats=[…]))` re‑runs the twin with those
+  adversary actions removed and returns the exact effect on mission availability. The do‑operator is exact:
+  suppressing N threats removes exactly N injections, and the factual run is untouched.
+- **But‑for attribution** — `attribute()` ranks the *causes* of availability loss by leave‑one‑out
+  re‑simulation. A worked result from the reference twin: the top causes are threats on **low‑criticality nodes
+  that linger** (the defender deprioritises them) — a genuinely causal finding a correlational "biggest/scariest
+  threat" view misses.
+- **Intervention recommendation** — `recommend()` proposes mitigation targets ranked by estimated causal effect.
+
+**The interop contract (both directions):**
+- *Platform → causal AI.* `build_causal_registry(provider)` exposes these as tools, served over the existing
+  **MCP / A2A** fabric — any external causal‑inference service or agent can query the twin as a counterfactual
+  oracle.
+- *Causal AI → platform.* An external engine is onboarded by implementing `CausalProvider`
+  (`discover_graph / counterfactual / attribute / recommend`); its graph and attributions then feed the war‑game
+  agents, the judge's explanations, and the operator picture — measured on the same substrate as everything else.
+
+**On the roadmap (🔭):** causal *discovery* from real L1/L2 telemetry (learn the DAG, don't just assume it);
+counterfactual explanations attached to every After‑Action Review; causal‑RL for course‑of‑action selection; and
+cross‑domain mediation analysis (does a cyber intrusion degrade the mission *through* the 5G core or the RAN?).
+
+---
+
+## 10 · War‑game engine, judge & doctrine gate (✅ available)
 
 - **Turn engine** with code‑enforced guardrails: per‑side action budgets, only registered tools execute
   (hallucinated actions are dropped, not run), opaque threat handles, and a judge that sees only the world log.
@@ -206,7 +242,7 @@ curriculum from after‑action gaps.
 
 ---
 
-## 10 · The live operations picture (✅ available)
+## 11 · The live operations picture (✅ available)
 
 The **Live Battlespace Map** streams a full theater engagement (~30 s) — a 28‑node **5G / IoT / tactical**
 network with a comms mesh, labelled by domain, under sustained multi‑wave assault. Availability dips under
@@ -219,11 +255,11 @@ windows** replay the engagement at packet and NF level:
 
 A **Mission Control** panel runs every scenario, benchmark, and live testbed action from one place; an
 **Analysis** page documents the model and algorithms honestly. *(Today the correlated telemetry is
-synthetic‑but‑consistent, generated from real simulation events; §11 roadmap promotes it to real capture.)*
+synthetic‑but‑consistent, generated from real simulation events; §12 roadmap promotes it to real capture.)*
 
 ---
 
-## 11 · Roadmap — future implementation that serves the purpose
+## 12 · Roadmap — future implementation that serves the purpose
 
 Grouped by horizon; all 🔭. These are chosen to deepen the twin, harden trust, and widen the AI training loop
 — the things an EDF‑grade decision‑and‑training platform needs next.
@@ -235,6 +271,8 @@ Grouped by horizon; all 🔭. These are chosen to deepen the twin, harden trust,
   vs. reality to quantify fidelity.
 - **Scenario/doctrine authoring GUI** — compose laydowns, waves, and rules of engagement without code;
   map threats to **MITRE ATT&CK** and doctrinal task lists.
+- **Causal discovery from live telemetry** — learn the causal DAG from L1/L2 feeds instead of assuming it, and
+  attach **counterfactual explanations** ("but‑for the jam on gNB‑16, the mission holds") to every AAR.
 - **Multi‑agent blue team in the war‑game** + **RL self‑play** red/blue co‑evolution.
 - **After‑Action Review (AAR)** analytics — automatic engagement reports, replay scrubbing, gap → curriculum.
 
@@ -256,7 +294,7 @@ Grouped by horizon; all 🔭. These are chosen to deepen the twin, harden trust,
 
 ---
 
-## 12 · Trust, sovereignty & governance (✅ today / 🔭 roadmap)
+## 13 · Trust, sovereignty & governance (✅ today / 🔭 roadmap)
 
 - **Sovereign** ✅ — models run locally in 4‑bit; no data leaves the box.
 - **Human‑in‑the‑loop** ✅ — doctrine gate on every consequential action, fully logged.
@@ -267,18 +305,20 @@ Grouped by horizon; all 🔭. These are chosen to deepen the twin, harden trust,
 
 ---
 
-## 13 · Standards & framework alignment
+## 14 · Standards & framework alignment
 
 3GPP 5G (NGAP/NAS/PFCP/GTP‑U, NWDAF) · O‑RAN (A1/RIC) · TM Forum **TMF921** intent & 3GPP **TS 28.312** ·
-agent interop **A2A / MCP / ACP / AG‑UI / AGNTCY‑OASF** · threat modelling **MITRE ATT&CK** (🔭 mapping) ·
-coalition **NATO FMN/MIP** (🔭) · **EU AI Act** meaningful‑human‑control evidence.
+agent interop **A2A / MCP / ACP / AG‑UI / AGNTCY‑OASF** · **causal interop** (SCM / do‑calculus via
+`CausalProvider`) · threat modelling **MITRE ATT&CK** (🔭 mapping) · coalition **NATO FMN/MIP** (🔭) ·
+**EU AI Act** meaningful‑human‑control evidence.
 
 ---
 
-## 14 · Maturity & evidence
+## 15 · Maturity & evidence
 
-- **Codebase:** `corelab` — 8 connectors, 17 capability packs, 5 interop protocols, 5 model back‑ends, the
-  full war‑game engine + campaign twin + control UI. **288 automated tests green.**
+- **Codebase:** `corelab` — 8 connectors, 17 capability packs, 5 interop protocols, 5 model back‑ends, a
+  causal‑interop module (twin‑as‑SCM), the full war‑game engine + campaign twin + control UI.
+  **294 automated tests green.**
 - **Proven live:** real Amarisoft RF red/blue; real host eBPF‑backdoor red/blue across two machines.
 - **Indicative TRL 5–6** for the simulation/emulation core and the live‑testbed bridges; roadmap items are
   TRL 2–4 by design.

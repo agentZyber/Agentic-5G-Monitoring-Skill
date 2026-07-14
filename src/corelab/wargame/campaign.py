@@ -131,8 +131,13 @@ def _telemetry(t: int, injects, mitig, nodes, active_ct: int, rng) -> Dict[str, 
     return {"pcap": pcap, "core": core, "enb": enb}
 
 
-def iter_campaign(turns: int = 80, seed: int = 11) -> Iterator[Dict[str, Any]]:
-    """Yield one map-ready frame per turn: new injects, mitigations, the live threat set, KPIs, telemetry."""
+def iter_campaign(turns: int = 80, seed: int = 11, suppress=frozenset()) -> Iterator[Dict[str, Any]]:
+    """Yield one map-ready frame per turn: new injects, mitigations, the live threat set, KPIs, telemetry.
+
+    ``suppress`` is a set of threat-ids to treat as *never injected* — the do()/but-for operator that makes
+    the twin a structural causal model: threat-id assignment stays deterministic (so ``T50`` is the same
+    threat in factual and counterfactual runs) and the empty-suppress run is byte-identical to the default.
+    """
     nodes, _ = build_theater()
     n = len(nodes)
     by_sector: Dict[str, List[int]] = {}
@@ -157,12 +162,14 @@ def iter_campaign(turns: int = 80, seed: int = 11) -> Iterator[Dict[str, Any]]:
                     else list(range(n)))
             for _ in range(k):
                 ni = rng.choice(pool)
+                kind = rng.choice(w["kinds"])          # consume rng before the check → stream is invariant
                 tid += 1
                 thid = f"T{tid}"
-                active[thid] = {"node_i": ni, "kind": rng.choice(w["kinds"]), "born": t}
+                if thid in suppress:                   # counterfactual: this adversary action never happened
+                    continue
+                active[thid] = {"node_i": ni, "kind": kind, "born": t}
                 total_inj += 1
-                injects.append({"threat_id": thid, "node": nodes[ni]["id"], "node_i": ni,
-                                "kind": active[thid]["kind"]})
+                injects.append({"threat_id": thid, "node": nodes[ni]["id"], "node_i": ni, "kind": kind})
 
         # blue: sense (implicit) then neutralise up to the rate, worst-first (node criticality, then age)
         rate = _BLUE_BASE + min(_BLUE_SURGE_CAP, len(active) // 4)
@@ -194,10 +201,10 @@ def iter_campaign(turns: int = 80, seed: int = 11) -> Iterator[Dict[str, Any]]:
         }
 
 
-def run_campaign(turns: int = 80, seed: int = 11) -> Dict[str, Any]:
-    """Collect the whole engagement (for a static render, a headless run, or tests)."""
+def run_campaign(turns: int = 80, seed: int = 11, suppress=frozenset()) -> Dict[str, Any]:
+    """Collect the whole engagement (for a static render, a headless run, counterfactuals, or tests)."""
     nodes, edges = build_theater()
-    frames = list(iter_campaign(turns, seed))
+    frames = list(iter_campaign(turns, seed, suppress))
     avails = [f["kpi"]["availability"] for f in frames]
     peak = max(f["kpi"]["active"] for f in frames)
     return {
