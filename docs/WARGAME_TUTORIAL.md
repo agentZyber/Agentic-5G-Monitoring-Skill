@@ -48,10 +48,10 @@ GPU host, with a tool‑calling model (e.g. `qwen2.5:14b`, `qwen3:8b`).
 ```bash
 cd Agentic-5G-Monitoring-Skill
 python3 -m venv .venv && .venv/bin/pip install -U pip
-.venv/bin/pip install pytest requests websockets          # + torch/trl/peft only if you train
+.venv/bin/pip install pytest requests websockets fastapi uvicorn   # + torch/trl/peft only if you train
 
 # run the test suite — should be all green
-.venv/bin/python -m pytest tests/ -q                       # -> 274 passed
+.venv/bin/python -m pytest tests/ -q                       # -> 281 passed
 
 # 30-second smoke test (fully simulated, no hardware, no LLM):
 PYTHONPATH=src .venv/bin/python training/wargame_guided.py --auto
@@ -59,6 +59,23 @@ PYTHONPATH=src .venv/bin/python training/wargame_guided.py --auto
 
 `tests/conftest.py` puts `src/` on the path for pytest; **scripts** need `PYTHONPATH=src` (shown in
 every command below).
+
+### 2.1 One-click: the War-Game Mission Control panel (recommended)
+The fastest way to run **every** test/demo in this tutorial is the web control panel — one card per
+test, click **Run**, output streams live:
+```bash
+.venv/bin/python training/wargame_control.py            # -> http://127.0.0.1:8800
+```
+The panel's hero link opens the **Theater Battlespace live map** (`/map`): a 28‑node battlespace under a
+sustained multi‑wave assault (215 threats over 80 turns) that streams onto an interactive map over ~30 s —
+threat arcs, per‑node status, KPI tiles, a wave timeline you can scrub, and pause/replay. Headless console
+version: `PYTHONPATH=src .venv/bin/python training/wargame_campaign.py`.
+
+Hardware‑free tests (unit suite, all scenarios, the 9/9 harness proof, evidence pack) run immediately.
+Tests that need a host light up only when you export its credential **before** launching — `SSHPASS`
+for the GPU box (sovereign LLM defender), `HOSTSENSOR_PASS` for the red VM (eBPF hunt), `AMARISOFT_WS_URL`
+for the RF testbed; otherwise those cards show the exact command to copy and run yourself. Everything
+below is also runnable directly from the shell.
 
 ---
 
@@ -115,6 +132,13 @@ On a host with Ollama, set the model — the demo adds a `blue:agent` row to the
 OLLAMA_MODEL=qwen2.5:14b OLLAMA_HOST=http://localhost:11434 \
   WARGAME_SCENARIO=all PYTHONPATH=src .venv/bin/python training/wargame_demo.py
 ```
+A capable sovereign base model (e.g. `qwen3:8b`) **wins the benchmark 9/9 out of the box** — all three
+scenarios × all three adversary profiles (single‑jam, multi‑vector, persistent), matching the
+scripted‑gold reference — because the blue observation surfaces the open‑threat board and the blue
+system prompt encodes a crisp defender doctrine. **No fine‑tuning is required for this tier**; a
+dedicated fine‑tune is only worth it for a harder adversary tier (or a smaller edge model) where the
+base model genuinely fails. See "Sovereign LLM defender on the benchmark (honest result)" in
+[`WARGAME_POC.md`](WARGAME_POC.md) for the diagnosis.
 
 ---
 

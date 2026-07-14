@@ -46,7 +46,17 @@ def _observe(world: WorldState, store, role: str, budget_left: int) -> str:
     status = "DEGRADED" if not world.mission_healthy() else "healthy"
     head = (f"mission asset: {world.mission} | service status: {status} | "
             f"your action budget left: {budget_left}")
-    return head + "\nrecent events (newest first):\n  " + "\n  ".join(lines or ["(none)"])
+    body = head + "\nrecent events (newest first):\n  " + "\n  ".join(lines or ["(none)"])
+    if role == "blue":
+        # Surface the open-threat board (id·kind·element) so a single-step defender can ground
+        # apply_countermeasure(threat_id=...) directly — decisive for clearing EVERY threat when
+        # several are active at once (the multi-vector case). Mirrors a real incident console.
+        active = world.active_threats()
+        board = " | ".join(
+            f"{t.payload.get('threat_id')}·{t.payload.get('kind') or t.event_type}·{t.entity_id or '?'}"
+            for t in active) if active else "none"
+        body += f"\nactive threats (id·kind·element): {board}"
+    return body
 
 
 def _apply(registry, action: Optional[Action], budget: Dict[str, int]) -> tuple[bool, str, Any]:

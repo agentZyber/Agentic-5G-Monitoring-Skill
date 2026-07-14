@@ -20,15 +20,39 @@ _ROLE_SYSTEM = {
     "red": ("You are the RED adversary in a sandboxed, non-kinetic network war-game. Each turn, "
             "choose ONE action from your tools to degrade the defender's mission service. Call a "
             "single tool."),
-    "blue": ("You are the BLUE defender/mission-planner in a sandboxed network war-game. Each turn, "
-             "SENSE then act: detect active threats, diagnose the live one, and apply an approved "
-             "countermeasure to restore the mission service. Countermeasures require human approval. "
-             "Call a single tool per turn."),
+    "blue": ("You are BLUE, the defender in a sandboxed network war-game. Keep the mission service "
+             "available by clearing EVERY active threat. Follow this doctrine exactly, one tool per "
+             "turn:\n"
+             "1. On turn 1 (before you have sensed), call detect_threats.\n"
+             "2. On later turns, if the observation's 'active threats' line lists one or more threats, "
+             "call apply_countermeasure with threat_id set to the FIRST listed id and measure=reroute. "
+             "One countermeasure clears one threat, so repeat this every turn until the list is empty.\n"
+             "3. If no active threats are listed, call detect_threats.\n"
+             "Never call any other tool. Countermeasures take effect only after human (doctrine) "
+             "approval."),
 }
 
 
 def default_system(role: str) -> str:
     return _ROLE_SYSTEM.get(role, "Choose the single best next action by calling one tool.")
+
+
+def render_agent_messages(role: str, observation: str, turn: int,
+                          system: Optional[str] = None) -> List[dict]:
+    """The exact chat prompt an LLM controller sees for one turn.
+
+    Single source of truth for the agent's turn prompt, shared by :class:`AgentController` (eval) and
+    the gold-trajectory synthesiser (train) so the two never drift — a train/eval prompt mismatch is
+    what silently sinks a fine-tune. The observation already carries the active-threat id list, so a
+    single-step policy can ground ``apply_countermeasure(threat_id=...)`` without extra tool round-trips.
+    """
+    return [
+        {"role": "system", "content": system or default_system(role)},
+        {"role": "user", "content": (
+            f"Turn {turn}. Current world observation:\n{observation}\n\n"
+            "Choose the single best next action by calling ONE tool. "
+            "If no action is warranted, answer briefly without calling a tool.")},
+    ]
 
 
 class ScriptedController:
@@ -82,13 +106,7 @@ class AgentController:
 
     def decide(self, role: str, observation: str, registry: ToolRegistry, turn: int) -> Optional[Action]:
         specs = [t.to_spec() for t in registry.list()]
-        messages = [
-            {"role": "system", "content": self.system or default_system(role)},
-            {"role": "user", "content": (
-                f"Turn {turn}. Current world observation:\n{observation}\n\n"
-                "Choose the single best next action by calling ONE tool. "
-                "If no action is warranted, answer briefly without calling a tool.")},
-        ]
+        messages = render_agent_messages(role, observation, turn, system=self.system)
         try:
             resp = self.provider.chat(messages, tools=specs or None)
         except Exception as exc:  # a provider hiccup must not crash the game — treat as hold

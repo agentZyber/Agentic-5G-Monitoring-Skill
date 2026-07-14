@@ -46,3 +46,14 @@ def test_bench_matched_trajectories_match_eval_context():
         assert not any("ERROR" in str(m.get("content", "")) for m in r["messages"] if m.get("role") == "tool")
         final = r["messages"][-1]["content"].lower()
         assert "specific" in final and "systemic" not in final
+
+
+def test_wargame_trajectories_teach_blue_loop():
+    from corelab.train.synth import synth_wargame_trajectories
+    s = synth_wargame_trajectories(n_per_scenario=10)
+    assert len(s) > 20
+    tools = {m["tool_calls"][0]["function"]["name"] for r in s for m in r["messages"] if m.get("tool_calls")}
+    assert "detect_threats" in tools and "apply_countermeasure" in tools
+    for r in s:
+        assert r["meta"]["source"] == "synth-wargame"
+        assert [m["role"] for m in r["messages"]] == ["system", "user", "assistant"]

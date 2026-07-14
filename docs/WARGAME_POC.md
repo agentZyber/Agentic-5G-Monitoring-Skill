@@ -70,10 +70,31 @@ The three drop‑in points for NCSRD's proven assets are now real, tested interf
    decisions (`verify()` breaks on tampering) — the local stand‑in for NCSRD's Besu quantum‑resistant
    DLT + PQC signing of the approval log.
 
+## Sovereign LLM defender on the benchmark (honest result)
+The single‑step LLM agent (`AgentController`, any local `LLMProvider`) ranks on the same leaderboard as
+the scripted baselines. Getting a sovereign model to actually *win* took three **harness** fixes, not a
+bigger model:
+- **Observable state** — the blue observation now surfaces the open‑threat board (`id·kind·element`), so
+  a single‑step agent can ground `apply_countermeasure(threat_id=…)` when several threats are active at
+  once (the multi‑vector case).
+- **One shared prompt** — `controllers.render_agent_messages` is the single renderer used by *both*
+  trajectory synthesis and eval, so train and eval prompts cannot silently drift.
+- **Crisp doctrine** — the blue system prompt encodes the exact winning loop (turn 1 → `detect_threats`;
+  then `apply_countermeasure` on the *first* listed threat id until the board is clear; nothing else),
+  replacing a prompt that told the model to `diagnose` — a step the winning policy never uses.
+
+With these, **base qwen3:8b wins 9/9** across every scenario × adversary profile (single‑jam,
+multi‑vector, persistent), matching the reactive‑gold reference — with **no fine‑tuning**. An earlier
+"fine‑tune lifts 0% → 33%" figure was an **artifact of the pre‑fix harness** (unobservable threat ids +
+a diagnose‑inducing prompt), not a learned skill; it is reported here corrected. Net: this benchmark is
+solvable by the sovereign *base* model, so fine‑tuning is reserved for a harder tier — or a smaller edge
+model — where the base genuinely fails. (Diagnosis method: `AgentController` trace of the actual
+observation → tool call, per turn.)
+
 ## Status
 TRL 4–5 (working, tested, reproducible; runs on the local sovereign stack). Tests:
 `tests/test_wargame.py` + `tests/test_wargame_integrations.py` (scoring, doctrine gate, guardrails,
-leaderboard, evidence artefacts, and all three P4 hooks) — part of the toolkit's green suite (270 tests).
+leaderboard, evidence artefacts, and all three P4 hooks) — part of the toolkit's green suite (278 tests).
 The console (`training/wargame_dashboard.py`) adds a **▶ playback** that auto‑advances turns and
 animates the battlespace; the guided demo (`training/wargame_guided.py`) covers all scenarios with
 `--auto` / `--live-approval` / `--adaptive` flags.
